@@ -17,7 +17,7 @@ Use the following command inside the root folder.
 conan create . @myuser/testing --build missing
 
 ```
-In some cases, adding -s compiler.version=X or -s compiler.libcxx=libstdc++11 can solve build errors.
+
 
 If you want to upload to a server, please refer to this site:
 
@@ -56,6 +56,7 @@ make
 
 ```
 
+Append "-s compiler.libcxx=libstdc++11" to conan install, if you encounter linking issues.
 The executables are located inside the folder build/bin/
 
 
