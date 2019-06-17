@@ -54,10 +54,11 @@ namespace nvenc_rtsp
 	class ClientPipeRTSP : public Decoder
 	{
 	  public:
-	    ClientPipeRTSP(std::string rtspAddress, int width, int height, int bytesPerPixel, PurposeID purpose, NvPipe_Format decFormat, NvPipe_Codec codec = CODEC, RecvCallFn recv_cb = NULL);
-			ClientPipeRTSP(std::string rtspAddress, int width, int height, int bytesPerPixel, PurposeID purpose, NvPipe_Format decFormat, RecvCallFn recv_cb = NULL);
+	    ClientPipeRTSP(std::string rtspAddress, PurposeID purpose, NvPipe_Format decFormat, NvPipe_Codec codec = CODEC, RecvCallFn recv_cb = NULL);
+		ClientPipeRTSP(std::string rtspAddress, PurposeID purpose, NvPipe_Format decFormat, RecvCallFn recv_cb = NULL);
 
 	    virtual void cleanUp() override;
+
 	  private:
 
 	    int cvtBuffer(uint8_t *buf, ssize_t bufsize, uint8_t *outBuf, ssize_t *outLength);

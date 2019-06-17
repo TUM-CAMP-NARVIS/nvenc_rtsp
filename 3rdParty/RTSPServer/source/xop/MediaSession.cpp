@@ -204,6 +204,9 @@ std::string MediaSession::getSdpMessage(std::string sessionName)
                      
 			snprintf(buf+strlen(buf), sizeof(buf)-strlen(buf),											
 					"a=control:track%d\r\n", chn);	
+
+            snprintf(buf+strlen(buf), sizeof(buf)-strlen(buf),                                          
+                    "%s\r\n", _sdp_addon.c_str());  
         }
     }
 

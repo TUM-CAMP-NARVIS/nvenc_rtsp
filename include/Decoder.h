@@ -55,8 +55,21 @@ namespace nvenc_rtsp
   class Decoder
   {
   public:
-    Decoder(int width, int height, int bytesPerPixel, PurposeID purpose, NvPipe_Format decFormat, NvPipe_Codec codec, RecvCallFn recv_cb = NULL);
-    Decoder(int width, int height, int bytesPerPixel, PurposeID purpose, NvPipe_Format decFormat, RecvCallFn recv_cb = NULL);
+    Decoder(PurposeID purpose, NvPipe_Format decFormat, NvPipe_Codec codec, RecvCallFn recv_cb = NULL);
+    Decoder(PurposeID purpose, NvPipe_Format decFormat, RecvCallFn recv_cb = NULL);
+
+    inline bool set_ImageProperties(int width, int height, int bytesPerPixel)
+    {
+        if(width == 0 || height == 0 || bytesPerPixel == 0 ) return false;
+
+        m_width = width;
+        m_height = height;
+        m_bytesPerPixel = bytesPerPixel;
+        m_dataSize = (int)(m_width * m_height * m_bytesPerPixel);
+        m_frameBuffer = std::vector<uint8_t>(m_dataSize);
+        cudaMalloc(&m_gpuDevice, m_dataSize);
+        return true;
+    }
 
     virtual ~Decoder();
 
@@ -70,9 +83,9 @@ namespace nvenc_rtsp
   protected:
     RecvCallFn m_recv_cb = NULL;
 
-    int m_width;
-    int m_height;
-    int m_bytesPerPixel;
+    int m_width = 0;
+    int m_height = 0;
+    int m_bytesPerPixel = 0;
     int m_dataSize;
     PurposeID m_purpose;
 

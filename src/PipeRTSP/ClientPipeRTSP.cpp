@@ -47,15 +47,19 @@
 using namespace std;
 using namespace nvenc_rtsp;
 
-#define RTP_OFFSET (12)
-#define FU_OFFSET (14)
-
-ClientPipeRTSP::ClientPipeRTSP(std::string _rtspAddress, int _width, int _height, int _bytesPerPixel, PurposeID _purpose, NvPipe_Format _decFormat, NvPipe_Codec _codec, RecvCallFn _recv_cb)
-    : Decoder(_width, _height, _bytesPerPixel, _purpose, _decFormat, _codec, _recv_cb),
+ClientPipeRTSP::ClientPipeRTSP(std::string _rtspAddress, PurposeID _purpose, NvPipe_Format _decFormat, NvPipe_Codec _codec, RecvCallFn _recv_cb)
+    : Decoder(_purpose, _decFormat, _codec, _recv_cb),
       m_rtspAddress(_rtspAddress)
 {
     m_player = std::make_shared<RK::RtspPlayer>(
-        [=](uint8_t *buffer, ssize_t bufferLength) {
+        [&](uint8_t *buffer, ssize_t bufferLength) {
+            
+            if(m_width == 0 && m_height == 0 && m_bytesPerPixel == 0)
+            {
+                auto imgProp = m_player->GetImageProperties();
+                if(!set_ImageProperties(imgProp.width, imgProp.height, imgProp.bytesPerPixel)) return;
+            }
+
             ssize_t myLength;
 
             uint8_t frameCounter = buffer[3];
@@ -126,8 +130,8 @@ ClientPipeRTSP::ClientPipeRTSP(std::string _rtspAddress, int _width, int _height
     usleep(500000);
 }
 
-ClientPipeRTSP::ClientPipeRTSP(std::string _rtspAddress, int _width, int _height, int _bytesPerPixel, PurposeID _purpose, NvPipe_Format _decFormat, RecvCallFn _recv_cb)
-: ClientPipeRTSP(_rtspAddress, _width, _height, _bytesPerPixel, _purpose, _decFormat, CODEC, _recv_cb)
+ClientPipeRTSP::ClientPipeRTSP(std::string _rtspAddress, PurposeID _purpose, NvPipe_Format _decFormat, RecvCallFn _recv_cb)
+: ClientPipeRTSP(_rtspAddress, _purpose, _decFormat, CODEC, _recv_cb)
 {    
 }
 

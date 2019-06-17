@@ -47,28 +47,20 @@
 using namespace std;
 using namespace nvenc_rtsp;
 
-Decoder::Decoder(int _width, int _height, int _bytesPerPixel, PurposeID _purpose, NvPipe_Format _decFormat, NvPipe_Codec _codec, RecvCallFn _recv_cb)
-    : m_width(_width),
-      m_height(_height),
-      m_bytesPerPixel(_bytesPerPixel),
-      m_purpose(_purpose),
+Decoder::Decoder(PurposeID _purpose, NvPipe_Format _decFormat, NvPipe_Codec _codec, RecvCallFn _recv_cb)
+    : m_purpose(_purpose),
       m_decFormat(_decFormat),
       m_codec(_codec),
       m_recv_cb(_recv_cb)
 {
-
-    m_dataSize = (int)(m_width * m_height * m_bytesPerPixel);
-    m_frameBuffer = std::vector<uint8_t>(m_dataSize);
     //m_decoder = NvPipe_CreateDecoder(m_decFormat, m_codec, m_width, m_height);
     m_decoder = NvPipe_CreateDecoder(m_decFormat, m_codec);
     if (!m_decoder)
-        std::cerr << "Failed to create decoder: " << NvPipe_GetError(NULL) << std::endl;
-    cudaMalloc(&m_gpuDevice, m_dataSize);
-    
+        std::cerr << "Failed to create decoder: " << NvPipe_GetError(NULL) << std::endl;    
 }
 
-Decoder::Decoder(int _width, int _height, int _bytesPerPixel, PurposeID _purpose, NvPipe_Format _decFormat, RecvCallFn _recv_cb)
-: Decoder(_width, _height, _bytesPerPixel, _purpose, _decFormat, CODEC, _recv_cb)
+Decoder::Decoder(PurposeID _purpose, NvPipe_Format _decFormat, RecvCallFn _recv_cb)
+: Decoder(_purpose, _decFormat, CODEC, _recv_cb)
 {    
 }
 

@@ -48,6 +48,9 @@ public:
     void setRtspUrlSuffix(std::string& suffix)
     { _suffix = suffix; }
 
+    void setMediaDescribeSDPAddon(std::string sdp_addon)
+    { _sdp_addon = sdp_addon; }
+
     std::string getSdpMessage(std::string sessionName="");
     MediaSource* getMediaSource(MediaChannelId channelId); 
     bool handleFrame(MediaChannelId channelId, AVFrame frame);
@@ -81,6 +84,7 @@ private:
     MediaSessionId _sessionId = 0;
     std::string _suffix;
     std::string _sdp;
+    std::string _sdp_addon;
 
     std::vector<std::shared_ptr<MediaSource>> _mediaSources;
     std::vector<RingBuffer<AVFrame>> _buffer;

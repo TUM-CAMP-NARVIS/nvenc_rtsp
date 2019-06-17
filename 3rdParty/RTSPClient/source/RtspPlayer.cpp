@@ -49,6 +49,11 @@ namespace RK {
 
     }
     
+    ImgProps RtspPlayer::GetImageProperties()
+    {
+        return _ImgProps;
+    }
+
     bool RtspPlayer::getIPFromUrl(std::string url, char *ip, unsigned short *port) {
         unsigned int dstip[4] = {0};
         int dstport = 0;
@@ -149,6 +154,7 @@ namespace RK {
         
         std::vector<std::string> rvector;
         char* tmpStr = strtok(tempBuffer, pattern);
+
         while (tmpStr != NULL)
         {
             rvector.push_back(std::string(tmpStr));
@@ -185,6 +191,28 @@ namespace RK {
         }
 
         _SdpParser = sdp_parse(sdp.c_str());
+
+        // Get image properties from describe string
+        for(int i=0;i<_SdpParser->medias_count;i++)
+        {
+            for(int j=0;j<_SdpParser->medias[i].attributes_count;j++)
+            {
+                char* indexFound = NULL;
+                indexFound = strstr(_SdpParser->medias[i].attributes[j], "x-dimensions:");
+                if(indexFound)
+                {
+                    indexFound += 13; // length of "x-dimensions:"
+                    char* values=strtok(indexFound, ",");
+                    if(values) _ImgProps.width = atoi(values);
+                    values=strtok(NULL, ",");
+                    if(values) _ImgProps.height = atoi(values);
+                    values=strtok(NULL, ",");
+                    if(values) _ImgProps.bytesPerPixel = atoi(values);
+
+                }
+            }
+
+        }
     }
     
     void RtspPlayer::RtspSetup(const std::string url, int track, int CSeq, char *proto, short rtp_port, short rtcp_port) {
@@ -256,7 +284,7 @@ namespace RK {
             log(TAG, "invalid rtsp message");
             return false;
         }
-        
+
         switch (MsgType) {
             case RTSPOPTIONS:
                 

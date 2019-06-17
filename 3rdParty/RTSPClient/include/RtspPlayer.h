@@ -80,6 +80,12 @@ namespace RK {
         unsigned E :1;
         unsigned S :1;
     };
+
+    struct ImgProps{
+        int width;
+        int height;
+        int bytesPerPixel;
+    };
     
     class RtspPlayer {
     public:
@@ -88,6 +94,8 @@ namespace RK {
         ~RtspPlayer();
         bool Play(std::string url);
         void Stop();
+        ImgProps GetImageProperties();
+
         RecvBufferFn recv_cb = NULL;
     protected:
         bool NetworkInit(const char *ip, const short port);
@@ -110,6 +118,8 @@ namespace RK {
         std::vector<std::string> GetSDPFromMessage(const char *buffer, size_t length, const char *pattern);
     private:
 	    bool PortIsOpen(int port);
+
+        struct ImgProps _ImgProps;
 
         std::atomic<bool> _Terminated;
         std::atomic<bool> _NetWorked;

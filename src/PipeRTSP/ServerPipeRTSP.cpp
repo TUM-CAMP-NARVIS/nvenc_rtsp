@@ -54,7 +54,7 @@ ServerPipeRTSP::ServerPipeRTSP(int _port, int _width, int _height, int _bytesPer
 {
 
     // RTSP ############################################################
-    m_rtspThread = thread([&, _purpose, _port]() {
+    m_rtspThread = thread([&, _width, _height, _bytesPerPixel, _purpose, _port]() {
         int clients = 0;
         std::string ip = xop::NetInterface::getLocalIPAddress();
         std::string rtspUrl;
@@ -66,6 +66,7 @@ ServerPipeRTSP::ServerPipeRTSP(int _port, int _width, int _height, int _bytesPer
         rtspUrl = "rtsp://" + ip + ":" + std::to_string(_port) +  "/" + session->getRtspUrlSuffix();
 
         session->addMediaSource(xop::channel_0, xop::H264Source::createNew());
+        session->setMediaDescribeSDPAddon("a=x-dimensions:" + std::to_string(_width) + "," + std::to_string(_height) + "," + std::to_string(_bytesPerPixel) + "\n");
 
         session->setNotifyCallback([&clients, &rtspUrl](xop::MediaSessionId sessionId, uint32_t numClients) {
             clients = numClients;
