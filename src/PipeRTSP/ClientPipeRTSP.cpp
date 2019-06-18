@@ -47,8 +47,8 @@
 using namespace std;
 using namespace nvenc_rtsp;
 
-ClientPipeRTSP::ClientPipeRTSP(std::string _rtspAddress, PurposeID _purpose, NvPipe_Format _decFormat, NvPipe_Codec _codec, RecvCallFn _recv_cb)
-    : Decoder(_purpose, _decFormat, _codec, _recv_cb),
+ClientPipeRTSP::ClientPipeRTSP(std::string _rtspAddress, NvPipe_Format _decFormat, NvPipe_Codec _codec, RecvCallFn _recv_cb)
+    : Decoder(_decFormat, _codec, _recv_cb),
       m_rtspAddress(_rtspAddress)
 {
 
@@ -96,15 +96,15 @@ ClientPipeRTSP::ClientPipeRTSP(std::string _rtspAddress, PurposeID _purpose, NvP
             //Retrieve from GPU
             m_timer.reset();
             cv::Mat outMat;
-            switch (m_purpose)
+            switch (m_bytesPerPixel)
             {
-                case Video:
+                case 4:
                 {
                     outMat = cv::Mat(cv::Size(m_width, m_height), CV_8UC4);
                     cudaMemcpy(outMat.data, m_gpuDevice, m_dataSize, cudaMemcpyDeviceToHost);
                     break;
                 }
-                case Depth:
+                case 2:
                 {
                     outMat = cv::Mat(cv::Size(m_width, m_height), CV_16UC1);
                     cudaMemcpy(outMat.data, m_gpuDevice, m_dataSize, cudaMemcpyDeviceToHost);
@@ -119,7 +119,7 @@ ClientPipeRTSP::ClientPipeRTSP(std::string _rtspAddress, PurposeID _purpose, NvP
 #endif
             if (m_recv_cb != NULL)
                 m_recv_cb(outMat, timestamp);
-        }, PurposeString(m_purpose));
+        }, "Stream");
 
     m_player->imgPropRdy_cb= [&](int width, int height, int bytesPerPixel)
     {
@@ -132,8 +132,8 @@ ClientPipeRTSP::ClientPipeRTSP(std::string _rtspAddress, PurposeID _purpose, NvP
     usleep(500000);
 }
 
-ClientPipeRTSP::ClientPipeRTSP(std::string _rtspAddress, PurposeID _purpose, NvPipe_Format _decFormat, RecvCallFn _recv_cb)
-: ClientPipeRTSP(_rtspAddress, _purpose, _decFormat, CODEC, _recv_cb)
+ClientPipeRTSP::ClientPipeRTSP(std::string _rtspAddress, NvPipe_Format _decFormat, RecvCallFn _recv_cb)
+: ClientPipeRTSP(_rtspAddress, _decFormat, CODEC, _recv_cb)
 {    
 }
 

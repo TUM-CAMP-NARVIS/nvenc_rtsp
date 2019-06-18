@@ -56,7 +56,7 @@ namespace nvenc_rtsp
   class Encoder
   {
   public:
-    Encoder(int width, int height, int bytesPerPixel, PurposeID purpose, NvPipe_Format encFormat, NvPipe_Compression compression, NvPipe_Codec codec, float bitrateMbps, int targetFPS);
+    Encoder(int width, int height, int bytesPerPixel, NvPipe_Format encFormat, NvPipe_Compression compression, NvPipe_Codec codec, float bitrateMbps, int targetFPS);
     
     virtual ~Encoder() = 0;
 
@@ -70,7 +70,6 @@ namespace nvenc_rtsp
     int m_height;
     int m_bytesPerPixel;
     int m_dataSize;
-    PurposeID m_purpose;
     float m_bitrateMbps;
     int m_targetFPS;
 

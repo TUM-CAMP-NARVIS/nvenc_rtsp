@@ -73,25 +73,6 @@ namespace nvenc_rtsp
 
 #define CODEC NVPIPE_H264
 
-    enum PurposeID
-    {
-        Video = 0,
-        Depth
-    };
-
-    inline std::string PurposeString(PurposeID id)
-    {
-        switch (id)
-        {
-        case Video:
-            return "Video";
-        case Depth:
-            return "Depth";
-        default:
-            return "Unknown";
-        }
-    }
-
     class Timer
     {
     public:

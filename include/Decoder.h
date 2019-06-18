@@ -55,8 +55,8 @@ namespace nvenc_rtsp
   class Decoder
   {
   public:
-    Decoder(PurposeID purpose, NvPipe_Format decFormat, NvPipe_Codec codec, RecvCallFn recv_cb = NULL);
-    Decoder(PurposeID purpose, NvPipe_Format decFormat, RecvCallFn recv_cb = NULL);
+    Decoder(NvPipe_Format decFormat, NvPipe_Codec codec, RecvCallFn recv_cb = NULL);
+    Decoder(NvPipe_Format decFormat, RecvCallFn recv_cb = NULL);
 
     bool init_VideoSize(int width, int height, int bytesPerPixel);
 
@@ -78,7 +78,6 @@ namespace nvenc_rtsp
     int m_height = 0;
     int m_bytesPerPixel = 0;
     int m_dataSize;
-    PurposeID m_purpose;
 
     NvPipe *m_decoder;
     NvPipe_Codec m_codec;

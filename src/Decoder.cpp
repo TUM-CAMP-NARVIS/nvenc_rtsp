@@ -47,9 +47,8 @@
 using namespace std;
 using namespace nvenc_rtsp;
 
-Decoder::Decoder(PurposeID _purpose, NvPipe_Format _decFormat, NvPipe_Codec _codec, RecvCallFn _recv_cb)
-    : m_purpose(_purpose),
-      m_decFormat(_decFormat),
+Decoder::Decoder(NvPipe_Format _decFormat, NvPipe_Codec _codec, RecvCallFn _recv_cb)
+    : m_decFormat(_decFormat),
       m_codec(_codec),
       m_recv_cb(_recv_cb)
 {
@@ -58,8 +57,8 @@ Decoder::Decoder(PurposeID _purpose, NvPipe_Format _decFormat, NvPipe_Codec _cod
         std::cerr << "Failed to create decoder: " << NvPipe_GetError(NULL) << std::endl;    
 }
 
-Decoder::Decoder(PurposeID _purpose, NvPipe_Format _decFormat, RecvCallFn _recv_cb)
-: Decoder(_purpose, _decFormat, CODEC, _recv_cb)
+Decoder::Decoder(NvPipe_Format _decFormat, RecvCallFn _recv_cb)
+: Decoder(_decFormat, CODEC, _recv_cb)
 {    
 }
 

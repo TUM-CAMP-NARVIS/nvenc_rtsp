@@ -55,9 +55,9 @@ namespace nvenc_rtsp
   class ServerPipeRTSP : public Encoder
   {
     public:
-      ServerPipeRTSP(int port, int width, int height, int bytesPerPixel, PurposeID purpose, NvPipe_Format encFormat, NvPipe_Compression compression, NvPipe_Codec codec, float bitrateMbps, int targetFPS);
-      ServerPipeRTSP(int port, int width, int height, int bytesPerPixel, PurposeID purpose, NvPipe_Format encFormat, NvPipe_Compression compression, NvPipe_Codec codec);
-      ServerPipeRTSP(int port, int width, int height, int bytesPerPixel, PurposeID purpose, NvPipe_Format encFormat, NvPipe_Compression compression);
+      ServerPipeRTSP(int port, int width, int height, int bytesPerPixel, NvPipe_Format encFormat, NvPipe_Compression compression, NvPipe_Codec codec, float bitrateMbps, int targetFPS);
+      ServerPipeRTSP(int port, int width, int height, int bytesPerPixel, NvPipe_Format encFormat, NvPipe_Compression compression, NvPipe_Codec codec);
+      ServerPipeRTSP(int port, int width, int height, int bytesPerPixel, NvPipe_Format encFormat, NvPipe_Compression compression);
 
       virtual ByteObject send_frame(cv::Mat mat) override;
 

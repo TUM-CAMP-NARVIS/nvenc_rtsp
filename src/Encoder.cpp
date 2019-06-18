@@ -46,11 +46,10 @@
 
 using namespace nvenc_rtsp;
 
-Encoder::Encoder(int _width, int _height, int _bytesPerPixel, PurposeID _purpose, NvPipe_Format _encFormat, NvPipe_Compression _compression, NvPipe_Codec _codec, float _bitrateMbps, int _targetFPS)
+Encoder::Encoder(int _width, int _height, int _bytesPerPixel, NvPipe_Format _encFormat, NvPipe_Compression _compression, NvPipe_Codec _codec, float _bitrateMbps, int _targetFPS)
     : m_width(_width),
       m_height(_height),
       m_bytesPerPixel(_bytesPerPixel),
-      m_purpose(_purpose),
       m_bitrateMbps(_bitrateMbps),
       m_targetFPS(_targetFPS),
       m_encFormat(_encFormat),

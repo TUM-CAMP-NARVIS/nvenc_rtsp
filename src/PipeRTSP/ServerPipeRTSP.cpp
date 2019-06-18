@@ -49,12 +49,12 @@ using namespace nvenc_rtsp;
 
 std::mutex ServerPipeRTSP::m_coutMutex;
 
-ServerPipeRTSP::ServerPipeRTSP(int _port, int _width, int _height, int _bytesPerPixel, PurposeID _purpose, NvPipe_Format _encFormat, NvPipe_Compression _compression, NvPipe_Codec _codec, float _bitrateMbps, int _targetFPS)
-    : Encoder(_width, _height, _bytesPerPixel, _purpose, _encFormat, _compression, _codec, _bitrateMbps, _targetFPS) 
+ServerPipeRTSP::ServerPipeRTSP(int _port, int _width, int _height, int _bytesPerPixel, NvPipe_Format _encFormat, NvPipe_Compression _compression, NvPipe_Codec _codec, float _bitrateMbps, int _targetFPS)
+    : Encoder(_width, _height, _bytesPerPixel, _encFormat, _compression, _codec, _bitrateMbps, _targetFPS) 
 {
 
     // RTSP ############################################################
-    m_rtspThread = thread([&, _width, _height, _bytesPerPixel, _purpose, _port]() {
+    m_rtspThread = thread([&, _width, _height, _bytesPerPixel, _port]() {
         int clients = 0;
         std::string ip = xop::NetInterface::getLocalIPAddress();
         std::string rtspUrl;
@@ -83,14 +83,14 @@ ServerPipeRTSP::ServerPipeRTSP(int _port, int _width, int _height, int _bytesPer
     // END RTSP ########################################################
     }
 
-ServerPipeRTSP::ServerPipeRTSP(int _port, int _width, int _height, int _bytesPerPixel, PurposeID _purpose, NvPipe_Format _encFormat, NvPipe_Compression _compression, NvPipe_Codec _codec)
-:ServerPipeRTSP(_port, _width, _height, _bytesPerPixel, _purpose, _encFormat, _compression, _codec, 32, 90)
+ServerPipeRTSP::ServerPipeRTSP(int _port, int _width, int _height, int _bytesPerPixel, NvPipe_Format _encFormat, NvPipe_Compression _compression, NvPipe_Codec _codec)
+:ServerPipeRTSP(_port, _width, _height, _bytesPerPixel, _encFormat, _compression, _codec, 32, 90)
 {
     
 }
 
-ServerPipeRTSP::ServerPipeRTSP(int _port, int _width, int _height, int _bytesPerPixel, PurposeID _purpose, NvPipe_Format _encFormat, NvPipe_Compression _compression)
-:    ServerPipeRTSP(_port, _width, _height, _bytesPerPixel, _purpose, _encFormat, _compression, CODEC, 32, 90)
+ServerPipeRTSP::ServerPipeRTSP(int _port, int _width, int _height, int _bytesPerPixel, NvPipe_Format _encFormat, NvPipe_Compression _compression)
+:    ServerPipeRTSP(_port, _width, _height, _bytesPerPixel, _encFormat, _compression, CODEC, 32, 90)
 {
 
 }
