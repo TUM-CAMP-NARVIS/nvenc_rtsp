@@ -36,6 +36,7 @@ extern "C" {
 namespace RK {
 
     using RecvBufferFn = std::function<void(uint8_t*, ssize_t)>;
+    using ImgPropRdyFn = std::function<void(int, int, int)>;
 
     enum RtspPlayerState {
         RtspSendOptions = 0,
@@ -97,6 +98,7 @@ namespace RK {
         ImgProps GetImageProperties();
 
         RecvBufferFn recv_cb = NULL;
+        ImgPropRdyFn imgPropRdy_cb = NULL;
     protected:
         bool NetworkInit(const char *ip, const short port);
         bool RTPSocketInit(int videoPort, int audioPort);

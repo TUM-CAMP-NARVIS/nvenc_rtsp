@@ -51,14 +51,11 @@ ClientPipeRTSP::ClientPipeRTSP(std::string _rtspAddress, PurposeID _purpose, NvP
     : Decoder(_purpose, _decFormat, _codec, _recv_cb),
       m_rtspAddress(_rtspAddress)
 {
+
     m_player = std::make_shared<RK::RtspPlayer>(
         [&](uint8_t *buffer, ssize_t bufferLength) {
-            
-            if(m_width == 0 && m_height == 0 && m_bytesPerPixel == 0)
-            {
-                auto imgProp = m_player->GetImageProperties();
-                if(!set_ImageProperties(imgProp.width, imgProp.height, imgProp.bytesPerPixel)) return;
-            }
+
+            if(!is_initiated()) return;
 
             ssize_t myLength;
 
@@ -123,6 +120,11 @@ ClientPipeRTSP::ClientPipeRTSP(std::string _rtspAddress, PurposeID _purpose, NvP
             if (m_recv_cb != NULL)
                 m_recv_cb(outMat, timestamp);
         }, PurposeString(m_purpose));
+
+    m_player->imgPropRdy_cb= [&](int width, int height, int bytesPerPixel)
+    {
+        init_VideoSize(width, height, bytesPerPixel);
+    };
 
     m_player->Play(m_rtspAddress.c_str());
 

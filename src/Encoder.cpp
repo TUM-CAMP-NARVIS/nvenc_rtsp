@@ -57,27 +57,16 @@ Encoder::Encoder(int _width, int _height, int _bytesPerPixel, PurposeID _purpose
       m_compression(_compression),
       m_codec(_codec)
 {
+
     m_dataSize = m_width * m_height * m_bytesPerPixel;
     m_compressedBuffer = std::vector<uint8_t>(m_dataSize);
 
-    //m_encoder = NvPipe_CreateEncoder(m_encFormat, m_codec, m_compression, m_bitrateMbps * 1000 * 1000, m_targetFPS, m_width, m_height);
-    m_encoder = NvPipe_CreateEncoder(m_encFormat, m_codec, m_compression, m_bitrateMbps * 1000 * 1000, m_targetFPS);
+    m_encoder = NvPipe_CreateEncoder(m_encFormat, m_codec, m_compression, m_bitrateMbps * 1000 * 1000, m_targetFPS, m_width, m_height);
+    //m_encoder = NvPipe_CreateEncoder(m_encFormat, m_codec, m_compression, m_bitrateMbps * 1000 * 1000, m_targetFPS);
     if (!m_encoder)
         std::cerr << "Failed to create encoder: " << NvPipe_GetError(NULL) << std::endl;
 
     cudaMalloc(&m_gpuDevice, m_dataSize);
-}
-
-Encoder::Encoder(int _width, int _height, int _bytesPerPixel, PurposeID _purpose, NvPipe_Format _encFormat, NvPipe_Compression _compression, NvPipe_Codec _codec)
-:Encoder(_width, _height, _bytesPerPixel, _purpose, _encFormat, _compression, _codec, 32, 90)
-{
-    
-}
-
-Encoder::Encoder(int _width, int _height, int _bytesPerPixel, PurposeID _purpose, NvPipe_Format _encFormat, NvPipe_Compression _compression)
-:    Encoder(_width, _height, _bytesPerPixel, _purpose, _encFormat, _compression, CODEC, 32, 90)
-{
-
 }
 
 Encoder::~Encoder(){};

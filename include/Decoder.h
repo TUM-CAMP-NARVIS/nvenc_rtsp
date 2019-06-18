@@ -58,27 +58,18 @@ namespace nvenc_rtsp
     Decoder(PurposeID purpose, NvPipe_Format decFormat, NvPipe_Codec codec, RecvCallFn recv_cb = NULL);
     Decoder(PurposeID purpose, NvPipe_Format decFormat, RecvCallFn recv_cb = NULL);
 
-    inline bool set_ImageProperties(int width, int height, int bytesPerPixel)
-    {
-        if(width == 0 || height == 0 || bytesPerPixel == 0 ) return false;
+    bool init_VideoSize(int width, int height, int bytesPerPixel);
 
-        m_width = width;
-        m_height = height;
-        m_bytesPerPixel = bytesPerPixel;
-        m_dataSize = (int)(m_width * m_height * m_bytesPerPixel);
-        m_frameBuffer = std::vector<uint8_t>(m_dataSize);
-        cudaMalloc(&m_gpuDevice, m_dataSize);
-        return true;
-    }
+    virtual ~Decoder() = 0;
 
-    virtual ~Decoder();
-
-    virtual void cleanUp();
+    virtual void cleanUp() = 0;
 
     void set_callback(RecvCallFn cb)
     {
         m_recv_cb = cb;
     }
+
+    inline bool is_initiated(){return m_initiated;}
 
   protected:
     RecvCallFn m_recv_cb = NULL;
@@ -97,5 +88,8 @@ namespace nvenc_rtsp
     void *m_gpuDevice;
 
     Timer m_timer;
+    
+private:
+    bool m_initiated = false;
   };
 } // namespace artekmed

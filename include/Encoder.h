@@ -57,14 +57,12 @@ namespace nvenc_rtsp
   {
   public:
     Encoder(int width, int height, int bytesPerPixel, PurposeID purpose, NvPipe_Format encFormat, NvPipe_Compression compression, NvPipe_Codec codec, float bitrateMbps, int targetFPS);
-    Encoder(int width, int height, int bytesPerPixel, PurposeID purpose, NvPipe_Format encFormat, NvPipe_Compression compression, NvPipe_Codec codec);
-    Encoder(int width, int height, int bytesPerPixel, PurposeID purpose, NvPipe_Format encFormat, NvPipe_Compression compression);
-	
-    virtual ~Encoder();
+    
+    virtual ~Encoder() = 0;
 
-    virtual ByteObject send_frame(cv::Mat mat){};
+    virtual ByteObject send_frame(cv::Mat mat) = 0;
 
-    virtual void cleanUp();
+    virtual void cleanUp() = 0;
 
   protected:
 
@@ -89,4 +87,4 @@ namespace nvenc_rtsp
     Timer m_timer;
   };
 
-} // namespace AM
+} // namespace nvenc_rtsp

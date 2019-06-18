@@ -66,7 +66,9 @@ endif()
 
 include(${CMAKE_BINARY_DIR}/conan.cmake)
 
-conan_cmake_run(REQUIRES opencv/4.1.0@conan/stable
+conan_cmake_run(CONANFILE opencv/4.1.0@conan/stable
+		nvpipe/[>=0.1]@camposs/testing
+		nvidia-video-codec-sdk/[>=9.0]@vendor/stable
                 BASIC_SETUP 
                 BUILD missing)
 

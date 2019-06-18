@@ -12,8 +12,9 @@ class nvenc_rtsp_Conan(ConanFile):
     description="NVIDIA-accelerated video compresssion library with built-in rtsp streaming"
 
     def requirements(self):
-        self.requires("nvpipe/[>=0.1]@camposs/testing")
-        self.requires("nvidia-video-codec-sdk/[>=9.0]@vendor/stable")
+    	pass
+        #self.requires("nvpipe/[>=0.1]@camposs/testing")
+        #self.requires("nvidia-video-codec-sdk/[>=9.0]@vendor/stable")
 
     def build(self):
         cmake = CMake(self)
@@ -35,4 +36,7 @@ class nvenc_rtsp_Conan(ConanFile):
         self.cpp_info.libs.append("opencv_highgui")
         self.cpp_info.libs.append("opencv_videoio")
         self.cpp_info.libs.append("opencv_imgproc")
+        self.cpp_info.libs.append("NvPipe")
+        self.cpp_info.libs.append("nvcuvid")
+        self.cpp_info.libs.append("nvidia-encode")
 

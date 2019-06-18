@@ -213,6 +213,10 @@ namespace RK {
             }
 
         }
+        if(_ImgProps.width > 0 && _ImgProps.height > 0 && _ImgProps.bytesPerPixel > 0 && imgPropRdy_cb != NULL)
+        {
+            imgPropRdy_cb(_ImgProps.width, _ImgProps.height, _ImgProps.bytesPerPixel);
+        }
     }
     
     void RtspPlayer::RtspSetup(const std::string url, int track, int CSeq, char *proto, short rtp_port, short rtcp_port) {
@@ -314,6 +318,7 @@ namespace RK {
     }
 
     void RtspPlayer::HandleRtspState() {
+
         switch (_PlayState.load()) {
             case RtspSendOptions:
                 log(TAG, "rtsp send options");
@@ -417,12 +422,12 @@ namespace RK {
             return false;
         }
         ::memcpy(_rtspip, ip, sizeof(ip));
-        
+
         if (!NetworkInit(ip, port)) {
             log(TAG, "network uninitizial");
             return false;
         }
-        
+
         EventInit();
 
         // internal rtsp play thread
@@ -455,6 +460,7 @@ namespace RK {
                 }
                 else
                 {
+
                     if (FD_ISSET(_RtspSocket, &_readfd))
                     {
                         ::memset(recvbuf, 0, sizeof(recvbuf));
