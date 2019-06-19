@@ -6,6 +6,7 @@ class nvenc_rtsp_Conan(ConanFile):
     generators = "cmake"
     settings = "os", "compiler", "build_type", "arch"
     options = {"shared": [True, False]}
+    # Not sure which opencv options are really necessary. Atleast one is needed for waitKey to function.
     default_options = "shared=True", "opencv:shared=True", "opencv:with_imgproc=True", "opencv:with_imgcodecs=True", "opencv:with_gtk=True", "opencv:with_highgui=True"
     exports_sources = "include*", "src*", "3rdParty*", "CMakeLists.txt"
 
@@ -14,7 +15,6 @@ class nvenc_rtsp_Conan(ConanFile):
     def requirements(self):
     	self.requires("opencv/[>=3.0]@camposs/stable")
     	self.requires("NvPipe/[>=0.1]@artekmed/testing")
-        self.requires("nvidia-video-codec-sdk/[>=9.0]@vendor/stable")
 
     def build(self):
         cmake = CMake(self)
