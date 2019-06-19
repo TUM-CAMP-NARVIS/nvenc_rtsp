@@ -22,6 +22,7 @@
 #include <arpa/inet.h>
 #include <sys/ioctl.h>
 #include <sys/select.h>
+#include <mutex>
 
 extern "C" {
 #include "sdp.h"
@@ -148,6 +149,8 @@ namespace RK {
         long _RtspSessionID = 0;
         
         std::string TAG;
+
+        static std::mutex _portMutex;
     };
     
 } //namespace RK

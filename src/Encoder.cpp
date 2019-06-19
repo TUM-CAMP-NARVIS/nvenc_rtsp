@@ -46,29 +46,37 @@
 
 using namespace nvenc_rtsp;
 
-Encoder::Encoder(int _width, int _height, int _bytesPerPixel, NvPipe_Format _encFormat, NvPipe_Compression _compression, NvPipe_Codec _codec, float _bitrateMbps, int _targetFPS)
-    : m_width(_width),
-      m_height(_height),
-      m_bytesPerPixel(_bytesPerPixel),
-      m_bitrateMbps(_bitrateMbps),
+Encoder::Encoder(NvPipe_Format _encFormat, NvPipe_Compression _compression, NvPipe_Codec _codec, float _bitrateMbps, int _targetFPS)
+    : m_bitrateMbps(_bitrateMbps),
       m_targetFPS(_targetFPS),
       m_encFormat(_encFormat),
       m_compression(_compression),
       m_codec(_codec)
 {
+}
 
+Encoder::~Encoder(){};
+
+bool Encoder::init_Encoder(int _width, int _height, int _bytesPerPixel)
+{
+    m_width = _width;
+    m_height = _height;
+    m_bytesPerPixel = _bytesPerPixel;
     m_dataSize = m_width * m_height * m_bytesPerPixel;
     m_compressedBuffer = std::vector<uint8_t>(m_dataSize);
 
     m_encoder = NvPipe_CreateEncoder(m_encFormat, m_codec, m_compression, m_bitrateMbps * 1000 * 1000, m_targetFPS, m_width, m_height);
-    //m_encoder = NvPipe_CreateEncoder(m_encFormat, m_codec, m_compression, m_bitrateMbps * 1000 * 1000, m_targetFPS);
     if (!m_encoder)
+    {
         std::cerr << "Failed to create encoder: " << NvPipe_GetError(NULL) << std::endl;
+        return false;
+    }
 
     cudaMalloc(&m_gpuDevice, m_dataSize);
-}
 
-Encoder::~Encoder(){};
+    m_initiated = true;
+    return true;
+}
 
 void Encoder::cleanUp()
 {

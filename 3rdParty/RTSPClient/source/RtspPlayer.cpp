@@ -29,6 +29,8 @@ do {\
 
 namespace RK {
 
+    std::mutex RtspPlayer::_portMutex;
+
     RtspPlayer::RtspPlayer(RecvBufferFn recv_cb, std::string name)
     :   recv_cb(recv_cb)
     {
@@ -37,14 +39,9 @@ namespace RK {
         _Terminated = false;
         _NetWorked = false;
         _PlayState = RtspIdle;
-        _video_rtp_port = RTP_PORT;
-        while(!PortIsOpen(_video_rtp_port)) _video_rtp_port ++;
-
-        _video_rtcp_port = RTCP_PORT;
-        while(!PortIsOpen(_video_rtcp_port)) _video_rtcp_port ++;
 
     }
-    
+
     RtspPlayer::~RtspPlayer() {
 
     }
@@ -81,13 +78,14 @@ namespace RK {
             log(TAG, "network init failed");
             return false;
         }
+
         _Eventfd = std::max(_RtspSocket, _Eventfd);
         
-        int ul = true;
-        if (::ioctl(_RtspSocket, FIONBIO, &ul) < 0) {
-            log(TAG, "set socket non block failed");
-            return false;
-        }
+        // int ul = true;
+        // if (::ioctl(_RtspSocket, FIONBIO, &ul) < 0) {
+        //     log(TAG, "set socket block failed");
+        //     return false;
+        // }
         
         struct sockaddr_in serverAddr;
         serverAddr.sin_family = AF_INET;
@@ -99,7 +97,7 @@ namespace RK {
         } else if (errno == EINPROGRESS){
             log(TAG, "async connecting...");
         } else {
-            log(TAG, "invalid connect");
+            //log(TAG, "invalid connect");
             return false;
         }
         
@@ -240,7 +238,17 @@ namespace RK {
                         ::sscanf(_SdpParser->medias[i].attributes[j], "control:trackID=%d", &videoTrackID);
                     }
                 }
-                RtspSetup(_rtspurl, videoTrackID, RTSPVIDEO_SETUP, _SdpParser->medias[i].info.proto, _video_rtp_port, _video_rtcp_port);
+                {
+                    std::lock_guard<std::mutex> guard(_portMutex);
+                    _video_rtp_port = RTP_PORT;
+                    while (!PortIsOpen(_video_rtp_port))
+                        _video_rtp_port++;
+
+                    _video_rtcp_port = RTCP_PORT;
+                    while (!PortIsOpen(_video_rtcp_port))
+                        _video_rtcp_port++;
+                    RtspSetup(_rtspurl, videoTrackID, RTSPVIDEO_SETUP, _SdpParser->medias[i].info.proto, _video_rtp_port, _video_rtcp_port);
+                }
             }
         }
     }
@@ -423,17 +431,15 @@ namespace RK {
         }
         ::memcpy(_rtspip, ip, sizeof(ip));
 
-        if (!NetworkInit(ip, port)) {
-            log(TAG, "network uninitizial");
-            return false;
-        }
-
-        EventInit();
-
         // internal rtsp play thread
-        _PlayThreadPtr = std::make_shared<std::thread>([&] {
+        _PlayThreadPtr = std::make_shared<std::thread>([&, ip, port] {
             uint8_t recvbuf[2048];
 
+            log(TAG, "async connecting...");
+            while(!NetworkInit(ip, port) && !_Terminated ){usleep(1000000);}
+
+            EventInit();
+            
             while (!_Terminated)
             {
                 FD_ZERO(&_readfd);
@@ -446,7 +452,7 @@ namespace RK {
                 {
                     FD_SET(_RtpVideoSocket, &_readfd);
                 }
-
+                
                 int r = ::select(_Eventfd + 1, &_readfd, &_writefd, &_errorfd, NULL);
 
                 if (r < 0)
@@ -460,14 +466,15 @@ namespace RK {
                 }
                 else
                 {
-
                     if (FD_ISSET(_RtspSocket, &_readfd))
                     {
                         ::memset(recvbuf, 0, sizeof(recvbuf));
                         ssize_t recvbytes = ::recv(_RtspSocket, recvbuf, sizeof(recvbuf), 0);
+
                         if (recvbytes <= 0)
                         {
-                            //log(TAG, "Server not found");
+                            log(TAG, "server shut down");
+                            _Terminated = true;
                             break;
                         }
                         else

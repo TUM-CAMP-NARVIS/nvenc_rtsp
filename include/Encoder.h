@@ -56,7 +56,7 @@ namespace nvenc_rtsp
   class Encoder
   {
   public:
-    Encoder(int width, int height, int bytesPerPixel, NvPipe_Format encFormat, NvPipe_Compression compression, NvPipe_Codec codec, float bitrateMbps, int targetFPS);
+    Encoder(NvPipe_Format encFormat, NvPipe_Compression compression, NvPipe_Codec codec, float bitrateMbps, int targetFPS);
     
     virtual ~Encoder() = 0;
 
@@ -64,7 +64,10 @@ namespace nvenc_rtsp
 
     virtual void cleanUp() = 0;
 
+    inline bool is_initiated(){return m_initiated;}
   protected:
+
+    bool init_Encoder(int _width, int _height, int _bytesPerPixel);
 
     int m_width;
     int m_height;
@@ -84,6 +87,9 @@ namespace nvenc_rtsp
     void *m_gpuDevice;
 
     Timer m_timer;
+
+private:
+    bool m_initiated = false;
   };
 
 } // namespace nvenc_rtsp

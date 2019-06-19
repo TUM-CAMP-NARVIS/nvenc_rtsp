@@ -49,21 +49,38 @@ using namespace nvenc_rtsp;
 
 std::mutex ServerPipeRTSP::m_coutMutex;
 
-ServerPipeRTSP::ServerPipeRTSP(int _port, int _width, int _height, int _bytesPerPixel, NvPipe_Format _encFormat, NvPipe_Compression _compression, NvPipe_Codec _codec, float _bitrateMbps, int _targetFPS)
-    : Encoder(_width, _height, _bytesPerPixel, _encFormat, _compression, _codec, _bitrateMbps, _targetFPS) 
+ServerPipeRTSP::ServerPipeRTSP(int _port, NvPipe_Format _encFormat, NvPipe_Compression _compression, NvPipe_Codec _codec, float _bitrateMbps, int _targetFPS)
+: Encoder(_encFormat, _compression, _codec, _bitrateMbps, _targetFPS), m_port(_port)
+{
+}
+
+ServerPipeRTSP::ServerPipeRTSP(int _port, NvPipe_Format _encFormat, NvPipe_Compression _compression, NvPipe_Codec _codec)
+: ServerPipeRTSP(_port, _encFormat, _compression, _codec, 32, 90)
+{
+    
+}
+
+ServerPipeRTSP::ServerPipeRTSP(int _port, NvPipe_Format _encFormat, NvPipe_Compression _compression)
+: ServerPipeRTSP(_port, _encFormat, _compression, CODEC, 32, 90)
 {
 
+}
+
+bool ServerPipeRTSP::init_Loop(int _width, int _height, int _bytesPerPixel)
+{
+    if(!init_Encoder(_width, _height, _bytesPerPixel)) return false;
+
     // RTSP ############################################################
-    m_rtspThread = thread([&, _width, _height, _bytesPerPixel, _port]() {
+    m_rtspThread = thread([&, _width, _height, _bytesPerPixel]() {
         int clients = 0;
         std::string ip = xop::NetInterface::getLocalIPAddress();
         std::string rtspUrl;
 
         std::shared_ptr<xop::EventLoop> eventLoop(new xop::EventLoop());
-        m_server = new xop::RtspServer(eventLoop.get(), ip, _port);
+        m_server = new xop::RtspServer(eventLoop.get(), ip, m_port);
 
         xop::MediaSession *session = xop::MediaSession::createNew("live");
-        rtspUrl = "rtsp://" + ip + ":" + std::to_string(_port) +  "/" + session->getRtspUrlSuffix();
+        rtspUrl = "rtsp://" + ip + ":" + std::to_string(m_port) + "/" + session->getRtspUrlSuffix();
 
         session->addMediaSource(xop::channel_0, xop::H264Source::createNew());
         session->setMediaDescribeSDPAddon("a=x-dimensions:" + std::to_string(_width) + "," + std::to_string(_height) + "," + std::to_string(_bytesPerPixel) + "\n");
@@ -71,32 +88,25 @@ ServerPipeRTSP::ServerPipeRTSP(int _port, int _width, int _height, int _bytesPer
         session->setNotifyCallback([&clients, &rtspUrl](xop::MediaSessionId sessionId, uint32_t numClients) {
             clients = numClients;
             std::lock_guard<std::mutex> lock(ServerPipeRTSP::m_coutMutex);
-            std::cout << "[" << rtspUrl << "]" << " Online: " << clients << std::endl;
+            std::cout << "[" << rtspUrl << "]"
+                      << " Online: " << clients << std::endl;
         });
 
         m_sessionId = m_server->addMediaSession(session);
 
-        std::cout << "URL: " << rtspUrl << std::endl << std::endl;
+        std::cout << "URL: " << rtspUrl << std::endl
+                  << std::endl;
 
         eventLoop->loop();
     });
     // END RTSP ########################################################
-    }
-
-ServerPipeRTSP::ServerPipeRTSP(int _port, int _width, int _height, int _bytesPerPixel, NvPipe_Format _encFormat, NvPipe_Compression _compression, NvPipe_Codec _codec)
-:ServerPipeRTSP(_port, _width, _height, _bytesPerPixel, _encFormat, _compression, _codec, 32, 90)
-{
-    
-}
-
-ServerPipeRTSP::ServerPipeRTSP(int _port, int _width, int _height, int _bytesPerPixel, NvPipe_Format _encFormat, NvPipe_Compression _compression)
-:    ServerPipeRTSP(_port, _width, _height, _bytesPerPixel, _encFormat, _compression, CODEC, 32, 90)
-{
-
+    return true;
 }
 
 ByteObject ServerPipeRTSP::send_frame(cv::Mat mat)
 {
+    if(!is_initiated()) init_Loop(mat.size().width, mat.size().height, mat.elemSize());
+
     m_timer.reset();
 
     cudaMemcpy(m_gpuDevice, mat.data, m_dataSize, cudaMemcpyHostToDevice);
@@ -179,6 +189,8 @@ void ServerPipeRTSP::get_NalPackage(uchar* buffer, int maxSize, int *head, int *
 
 void ServerPipeRTSP::cleanUp()
 {
+    if(!is_initiated()) return;
+
     delete m_server;
     m_rtspThread.join();
 
