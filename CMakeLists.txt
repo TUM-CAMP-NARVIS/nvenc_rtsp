@@ -53,21 +53,6 @@ conan_basic_setup()
 
 include(GNUInstallDirs)
 
-#################################################################################################
-# CUDA
-#################################################################################################
-
-find_package(CUDA REQUIRED)
-
-# Construct path to CUDA driver API lib (not provided by FindCUDA)
-get_filename_component(CUDA_LIB_DIR ${CUDA_cudart_static_LIBRARY} DIRECTORY)
-find_library(CUDA_LIB NAMES cuda HINTS ${CUDA_LIB_DIR})
-
-# Set C++ standard
-set(CMAKE_CXX_STANDARD 11)
-
-include_directories(${CUDA_INCLUDE_DIRS})
-
 
 #################################################################################################
 # RTSP Server and Client
@@ -93,11 +78,9 @@ else()
 	add_library(nvenc_rtsp STATIC ${CORESOURCES} )
 endif()
 
-target_include_directories(nvenc_rtsp PUBLIC include ${CUDA_INCLUDE_DIRS})
+target_include_directories(nvenc_rtsp PUBLIC include)
 target_link_libraries(nvenc_rtsp PUBLIC
 	rtspConn
-    	${CUDA_LIBRARIES}
-    	${CUDA_LIB}
 	${CONAN_LIBS}
 	)
 #################################################################################################

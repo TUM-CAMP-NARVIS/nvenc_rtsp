@@ -29,5 +29,5 @@ class nvenc_rtsp_Conan(ConanFile):
         self.copy(pattern="*.so", dst="lib", keep_path=False)
 
     def package_info(self):
-        self.cpp_info.libs = ["nvenc_rtsp"]
+        self.cpp_info.libs = tools.collect_libs(self)
 
