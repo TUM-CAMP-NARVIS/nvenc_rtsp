@@ -58,14 +58,6 @@ include(GNUInstallDirs)
 #################################################################################################
 
 find_package(CUDA REQUIRED)
-
-# Construct path to CUDA driver API lib (not provided by FindCUDA)
-get_filename_component(CUDA_LIB_DIR ${CUDA_cudart_static_LIBRARY} DIRECTORY)
-find_library(CUDA_LIB NAMES cuda HINTS ${CUDA_LIB_DIR})
-
-# Set C++ standard
-set(CMAKE_CXX_STANDARD 11)
-
 include_directories(${CUDA_INCLUDE_DIRS})
 
 #################################################################################################
