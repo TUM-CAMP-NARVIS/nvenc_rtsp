@@ -54,25 +54,6 @@ conan_basic_setup()
 include(GNUInstallDirs)
 
 #################################################################################################
-# OPENCV
-#(somehow getting it with conanfile.py it will have problems with some function like videocapture)
-#################################################################################################
-
-if(NOT EXISTS "${CMAKE_BINARY_DIR}/conan.cmake")
-   message(STATUS "Downloading conan.cmake from https://github.com/conan-io/cmake-conan")
-   file(DOWNLOAD "https://github.com/conan-io/cmake-conan/raw/v0.14/conan.cmake"
-                 "${CMAKE_BINARY_DIR}/conan.cmake")
-endif()
-
-include(${CMAKE_BINARY_DIR}/conan.cmake)
-
-conan_cmake_run(REQUIRES opencv/4.1.0@conan/stable
-		nvpipe/[>=0.1]@camposs/testing
-		nvidia-video-codec-sdk/[>=9.0]@vendor/stable
-                BASIC_SETUP 
-                BUILD missing)
-
-#################################################################################################
 # CUDA
 #################################################################################################
 
@@ -115,7 +96,6 @@ endif()
 target_include_directories(nvenc_rtsp PUBLIC include ${CUDA_INCLUDE_DIRS})
 target_link_libraries(nvenc_rtsp PUBLIC
 	rtspConn
-	${OpenCV_LIBRARIES}
     	${CUDA_LIBRARIES}
     	${CUDA_LIB}
 	${CONAN_LIBS}
