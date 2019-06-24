@@ -14,14 +14,18 @@ Building nvenc_rtsp requires:
 Use the following command inside the root folder.
 
 ```
-conan create . @myuser/testing --build missing
+conan create . @<user>/testing
 
 ```
+with <user> being the remote name
+
+If you want to upload to a server use:
 
 
-If you want to upload to a server, please refer to this site:
+```
+conan upload nvenc_rtsp/<version>@<user>/testing --all -r artekmed
 
-https://docs.conan.io/en/latest/uploading_packages/uploading_to_remotes.html
+```
 
 
 ## Using the new Package
@@ -50,13 +54,14 @@ target_link_libraries(MyApp PRIVATE ${CONAN_LIBS} [...] }
 Building project:
 ```
 mkdir build && cd build
-conan install ..
+conan install .. --build nvenc_rtsp
 cmake ..
 make
 
 ```
 
-Append "-s compiler.libcxx=libstdc++11" to conan install, if you encounter linking issues.
+Run ```conan profile update settings.compiler.libcxx="libstdc++11" default``` in case you encounter linking issues.
+
 The executables are located inside the folder build/bin/
 
 
