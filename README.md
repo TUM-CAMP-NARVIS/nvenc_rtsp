@@ -17,7 +17,7 @@ Use the following command inside the root folder.
 conan create . @<user>/testing
 
 ```
-with <user> being the remote name
+with \<user\> being the remote name
 
 If you want to upload to a server use:
 
@@ -33,7 +33,7 @@ conan upload nvenc_rtsp/<version>@<user>/testing --all -r artekmed
 conanfile.txt (on the same level as your CMakeLists.txt)
 ```
 [requires]
-nvenc_rtsp/0.1@myuser/testing
+nvenc_rtsp/<version>@<user>/testing
 
 [generators]
 cmake
