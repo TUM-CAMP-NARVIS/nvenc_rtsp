@@ -54,8 +54,7 @@ namespace RK {
         RtspHandlePause,
         RtspSendTerminate,
         RtspHandleTerminate,
-        RtspIdle,
-        RtspTurnOff,
+        RtspIdle
     };
     
     enum RtspPlayerCSeq {
@@ -121,6 +120,7 @@ namespace RK {
         std::vector<std::string> GetSDPFromMessage(const char *buffer, size_t length, const char *pattern);
     private:
 	    bool PortIsOpen(int port);
+        bool PlayLoop(const char* ip, unsigned short port);
 
         struct ImgProps _ImgProps;
 

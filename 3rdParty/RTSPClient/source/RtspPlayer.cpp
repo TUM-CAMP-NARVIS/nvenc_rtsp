@@ -94,6 +94,7 @@ namespace RK {
         
         if (::connect(_RtspSocket, (struct sockaddr *)&serverAddr, (socklen_t)sizeof(serverAddr)) == 0) {
             log(TAG, "sync connect success");
+            _NetWorked = true;
         } else if (errno == EINPROGRESS){
             log(TAG, "async connecting...");
         } else {
@@ -101,7 +102,6 @@ namespace RK {
             return false;
         }
         
-        _NetWorked = true;
         return true;
     }
     
@@ -369,9 +369,6 @@ namespace RK {
                 break;
             case RtspIdle:
                 break;
-            case RtspTurnOff:
-                _Terminated = true;
-                break;
             default:
                 log(TAG, "unkonw rtsp state");
                 break;
@@ -419,7 +416,7 @@ namespace RK {
     //         }
     //     }
     // }
-    
+
     bool RtspPlayer::Play(std::string url) {
         char ip[256];
         unsigned short port = 0;
@@ -433,100 +430,117 @@ namespace RK {
 
         // internal rtsp play thread
         _PlayThreadPtr = std::make_shared<std::thread>([&, ip, port] {
-            uint8_t recvbuf[2048];
-
-            log(TAG, "async connecting...");
-            while(!NetworkInit(ip, port) && !_Terminated ){usleep(1000000);}
-
-            EventInit();
             
-            while (!_Terminated)
+            log(TAG, "async connecting...");
+            while(!PlayLoop(ip, port))
             {
-                FD_ZERO(&_readfd);
-                FD_ZERO(&_errorfd);
-                FD_SET(_RtspSocket, &_readfd);
-                FD_SET(_RtspSocket, &_errorfd);
-
-                // rtp video socket has connected
-                if (_RtpVideoSocket)
-                {
-                    FD_SET(_RtpVideoSocket, &_readfd);
-                }
-                
-                int r = ::select(_Eventfd + 1, &_readfd, &_writefd, &_errorfd, NULL);
-
-                if (r < 0)
-                {
-                    log(TAG, "event error...");
-                    break;
-                }
-                else if (r == 0)
-                {
-                    log(TAG, "event over time...");
-                }
-                else
-                {
-                    if (FD_ISSET(_RtspSocket, &_readfd))
-                    {
-                        ::memset(recvbuf, 0, sizeof(recvbuf));
-                        ssize_t recvbytes = ::recv(_RtspSocket, recvbuf, sizeof(recvbuf), 0);
-
-                        if (recvbytes <= 0)
-                        {
-                            log(TAG, "server shut down");
-                            _Terminated = true;
-                            break;
-                        }
-                        else
-                        {
-                            if (!HandleRtspMsg((char *)recvbuf, recvbytes))
-                            {
-                                log(TAG, "failed to handle rtsp msg");
-                            }
-                        }
-                    }
-
-                    if (FD_ISSET(_RtpVideoSocket, &_readfd))
-                    {
-                        socklen_t socklen = sizeof(_RtpVideoAddr);
-                        ::memset(recvbuf, 0, sizeof(recvbuf));
-
-                        ssize_t recvbytes = ::recvfrom(_RtpVideoSocket, recvbuf, sizeof(recvbuf), 0, (struct sockaddr *)&_RtpVideoAddr, &socklen);
-                        //log(TAG, "recv rtp video packet %ld bytes", recvbytes);
-
-                        if (recv_cb != NULL)
-                        {
-                            recv_cb(recvbuf, recvbytes);
-                        }
-                    }
-
-                    if (FD_ISSET(_RtspSocket, &_writefd))
-                    {
-                        log(TAG, "async connect success");
-                        SetNextState(RtspSendDescribe);
-                        FD_CLR(_RtspSocket, &_writefd);
-                    }
-
-                    if (FD_ISSET(_RtspSocket, &_errorfd))
-                    {
-                        log(TAG, "event error occur");
-                        break;
-                    }
-                }
-
-                HandleRtspState();
+                usleep(100000);
             }
-
-            //fclose(fp);
         });
 
         return true;
     }
-    
-    void RtspPlayer::Stop() {
-        _PlayState = RtspTurnOff;
-        _PlayThreadPtr->join();
 
+    bool RtspPlayer::PlayLoop(const char* ip, unsigned short port)
+    {
+        uint8_t recvbuf[2048];
+
+        while (!NetworkInit(ip, port) && !_Terminated)
+        {
+            usleep(1000000);
+        }
+
+        EventInit();
+
+        while (!_Terminated)
+        {
+            FD_ZERO(&_readfd);
+            FD_ZERO(&_errorfd);
+            FD_SET(_RtspSocket, &_readfd);
+            FD_SET(_RtspSocket, &_errorfd);
+
+            // rtp video socket has connected
+            if (_RtpVideoSocket)
+            {
+                FD_SET(_RtpVideoSocket, &_readfd);
+            }
+
+            int r = ::select(_Eventfd + 1, &_readfd, &_writefd, &_errorfd, NULL);
+
+            if (r < 0)
+            {
+                log(TAG, "event error...");
+                break;
+            }
+            else if (r == 0)
+            {
+                log(TAG, "event over time...");
+            }
+            else
+            {
+                if (FD_ISSET(_RtspSocket, &_readfd))
+                {
+
+                    ::memset(recvbuf, 0, sizeof(recvbuf));
+                    ssize_t recvbytes = ::recv(_RtspSocket, recvbuf, sizeof(recvbuf), 0);
+
+                    if (recvbytes <= 0)
+                    {
+                        log(TAG, "async reconnecting...");
+                        close(_RtspSocket);
+                        close(_RtpVideoSocket);
+                        return false;
+                    }
+                    else
+                    {
+                        if (!HandleRtspMsg((char *)recvbuf, recvbytes))
+                        {
+                            log(TAG, "failed to handle rtsp msg");
+                        }
+                    }
+                }
+
+                if (FD_ISSET(_RtpVideoSocket, &_readfd))
+                {
+
+                    socklen_t socklen = sizeof(_RtpVideoAddr);
+                    ::memset(recvbuf, 0, sizeof(recvbuf));
+
+                    ssize_t recvbytes = ::recvfrom(_RtpVideoSocket, recvbuf, sizeof(recvbuf), 0, (struct sockaddr *)&_RtpVideoAddr, &socklen);
+                    //log(TAG, "recv rtp video packet %ld bytes", recvbytes);
+
+                    if (recvbytes > 0 && recv_cb != NULL)
+                    {
+                        recv_cb(recvbuf, recvbytes);
+                    }
+
+                }
+
+                if (FD_ISSET(_RtspSocket, &_writefd))
+                {
+                    log(TAG, "async connect success");
+                    SetNextState(RtspSendDescribe);
+                    FD_CLR(_RtspSocket, &_writefd);
+                }
+
+                if (FD_ISSET(_RtspSocket, &_errorfd))
+                {
+                    log(TAG, "event error occur");
+                    break;
+                }
+            }
+
+            HandleRtspState();
+        }
+
+        return true;
+    }
+
+    void RtspPlayer::Stop()
+    {
+        log(TAG, "client stopped");
+        _Terminated = true;
+        _PlayThreadPtr->join();
     }
 
     bool RtspPlayer::PortIsOpen(int port)
