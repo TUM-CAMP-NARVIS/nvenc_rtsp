@@ -60,19 +60,6 @@
 namespace nvenc_rtsp
 {
 
-#define CWIDTH 1920
-#define CHEIGHT 1440
-#define CBYTESPERPIXEL 4
-#define CNVFORMAT NVPIPE_RGBA32
-//#define CNVFORMAT NVPIPE_BGRA32
-
-#define DWIDTH 640
-#define DHEIGHT 480
-#define DBYTESPERPIXEL 2
-#define DNVFORMAT NVPIPE_UINT16
-
-#define CODEC NVPIPE_H264
-
     class Timer
     {
     public:

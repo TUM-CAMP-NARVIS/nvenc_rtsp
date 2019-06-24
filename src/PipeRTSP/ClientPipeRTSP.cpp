@@ -57,6 +57,8 @@ ClientPipeRTSP::ClientPipeRTSP(std::string _rtspAddress, NvPipe_Format _decForma
 
             if(!is_initiated()) return;
 
+            m_timer.reset();
+
             ssize_t myLength;
 
             uint8_t frameCounter = buffer[3];
@@ -82,6 +84,7 @@ ClientPipeRTSP::ClientPipeRTSP(std::string _rtspAddress, NvPipe_Format _decForma
                 return;
             }
 
+            double interpretMs = m_timer.getElapsedMilliseconds();
             m_timer.reset();
 
             uint64_t size = NvPipe_Decode(m_decoder, m_frameBuffer.data(), m_currentOffset, m_gpuDevice, m_width, m_height);
@@ -115,7 +118,7 @@ ClientPipeRTSP::ClientPipeRTSP(std::string _rtspAddress, NvPipe_Format _decForma
             double downloadMs = m_timer.getElapsedMilliseconds();
 
 #ifdef DISPPIPETIME
-            std::cout << size << " " << std::setw(11) << decodeMs << std::setw(11) << downloadMs << std::endl;
+            std::cout << interpretMs << " " << std::setw(11) << decodeMs << std::setw(11) << downloadMs << std::endl;
 #endif
             if (m_recv_cb != NULL)
                 m_recv_cb(outMat, timestamp);
@@ -133,7 +136,7 @@ ClientPipeRTSP::ClientPipeRTSP(std::string _rtspAddress, NvPipe_Format _decForma
 }
 
 ClientPipeRTSP::ClientPipeRTSP(std::string _rtspAddress, NvPipe_Format _decFormat, RecvCallFn _recv_cb)
-: ClientPipeRTSP(_rtspAddress, _decFormat, CODEC, _recv_cb)
+: ClientPipeRTSP(_rtspAddress, _decFormat, NVPIPE_H264, _recv_cb)
 {    
 }
 

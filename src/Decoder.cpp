@@ -57,11 +57,6 @@ Decoder::Decoder(NvPipe_Format _decFormat, NvPipe_Codec _codec, RecvCallFn _recv
         std::cerr << "Failed to create decoder: " << NvPipe_GetError(NULL) << std::endl;    
 }
 
-Decoder::Decoder(NvPipe_Format _decFormat, RecvCallFn _recv_cb)
-: Decoder(_decFormat, CODEC, _recv_cb)
-{    
-}
-
 Decoder::~Decoder(){};
 
 bool Decoder::init_VideoSize(int width, int height, int bytesPerPixel)

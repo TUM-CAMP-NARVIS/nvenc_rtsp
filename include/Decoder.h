@@ -56,7 +56,6 @@ namespace nvenc_rtsp
   {
   public:
     Decoder(NvPipe_Format decFormat, NvPipe_Codec codec, RecvCallFn recv_cb = NULL);
-    Decoder(NvPipe_Format decFormat, RecvCallFn recv_cb = NULL);
 
     bool init_VideoSize(int width, int height, int bytesPerPixel);
 

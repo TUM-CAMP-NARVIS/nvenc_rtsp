@@ -61,7 +61,7 @@ ServerPipeRTSP::ServerPipeRTSP(int _port, NvPipe_Format _encFormat, NvPipe_Compr
 }
 
 ServerPipeRTSP::ServerPipeRTSP(int _port, NvPipe_Format _encFormat, NvPipe_Compression _compression)
-: ServerPipeRTSP(_port, _encFormat, _compression, CODEC, 32, 90)
+: ServerPipeRTSP(_port, _encFormat, _compression, NVPIPE_H264, 32, 90)
 {
 
 }
@@ -110,6 +110,11 @@ ByteObject ServerPipeRTSP::send_frame(cv::Mat mat)
     m_timer.reset();
 
     cudaMemcpy(m_gpuDevice, mat.data, m_dataSize, cudaMemcpyHostToDevice);
+    
+    double uploadMs = m_timer.getElapsedMilliseconds();
+
+    m_timer.reset();
+   
     uint64_t size = NvPipe_Encode(m_encoder, m_gpuDevice, m_width * m_bytesPerPixel, m_compressedBuffer.data(), m_dataSize, m_width, m_height, m_forceIFrame);
     m_forceIFrame = true;
 
@@ -137,7 +142,7 @@ ByteObject ServerPipeRTSP::send_frame(cv::Mat mat)
     // END RTSP ############################################################
 
 #ifdef DISPPIPETIME
-    std::cout << size << std::setw(11) << encodeMs << std::setw(11) << socketMs << std::endl;
+    std::cout << uploadMs << std::setw(11) << encodeMs << std::setw(11) << socketMs << std::endl;
 #endif
 
     ByteObject result = {m_compressedBuffer.data(), size};
