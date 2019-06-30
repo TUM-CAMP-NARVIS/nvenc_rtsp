@@ -12,9 +12,11 @@ class nvenc_rtsp_Conan(ConanFile):
 
     description="NVIDIA-accelerated video compresssion library with built-in rtsp streaming"
 
-    def requirements(self):
-    	self.requires("opencv/[>=3.0]@camposs/stable")
-    	self.requires("NvPipe/[>=0.1]@artekmed/testing")
+    requires = (
+        "opencv/[>=3.0]@camposs/stable",
+        "nvpipe/[>=0.2]@camposs/stable",
+        )
+
 
     def build(self):
         cmake = CMake(self)
