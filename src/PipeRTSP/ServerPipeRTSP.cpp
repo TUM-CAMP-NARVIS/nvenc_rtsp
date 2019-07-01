@@ -103,7 +103,7 @@ bool ServerPipeRTSP::init_Loop(int _width, int _height, int _bytesPerPixel)
     return true;
 }
 
-ByteObject ServerPipeRTSP::send_frame(cv::Mat mat)
+ByteObject ServerPipeRTSP::send_frame(cv::Mat mat, uint32_t timestamp)
 {
     if(!is_initiated()) init_Loop(mat.size().width, mat.size().height, mat.elemSize());
 
@@ -133,7 +133,7 @@ ByteObject ServerPipeRTSP::send_frame(cv::Mat mat)
             xop::AVFrame videoFrame = {0};
             videoFrame.type = 0;
             videoFrame.size = length;
-            videoFrame.timestamp = xop::H264Source::getTimeStamp();
+            videoFrame.timestamp = timestamp != 0? timestamp : xop::H264Source::getTimeStamp();
             videoFrame.buffer = &m_compressedBuffer.data()[head];
             m_server->pushFrame(m_sessionId, xop::channel_0, videoFrame);
         }

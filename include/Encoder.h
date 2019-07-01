@@ -60,7 +60,7 @@ namespace nvenc_rtsp
     
     virtual ~Encoder() = 0;
 
-    virtual ByteObject send_frame(cv::Mat mat) = 0;
+    virtual ByteObject send_frame(cv::Mat mat, uint32_t timestamp = 0) = 0;
 
     virtual void cleanUp() = 0;
 

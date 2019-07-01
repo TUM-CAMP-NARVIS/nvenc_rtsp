@@ -59,7 +59,7 @@ namespace nvenc_rtsp
       ServerPipeRTSP(int port, NvPipe_Format encFormat, NvPipe_Compression compression, NvPipe_Codec codec);
       ServerPipeRTSP(int port, NvPipe_Format encFormat, NvPipe_Compression compression);
 
-      virtual ByteObject send_frame(cv::Mat mat) override;
+      virtual ByteObject send_frame(cv::Mat mat, uint32_t ts = 0) override;
 
       virtual void cleanUp() override;
 
