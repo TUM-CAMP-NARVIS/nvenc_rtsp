@@ -44,6 +44,7 @@ project(ArtekMedNvPipe VERSION 1.0.0 LANGUAGES CXX C)
 #                                                                                   #
 # ***********************************************************************************
 
+# XXX these flags only work on linux !!!
 SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -pthread -fPIC")
 
 option(BUILD_SHARED_LIBS "Build shared library" ON)
