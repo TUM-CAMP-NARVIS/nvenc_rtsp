@@ -55,9 +55,9 @@ namespace nvenc_rtsp
   class ServerPipeRTSP : public Encoder
   {
     public:
-      ServerPipeRTSP(int port, NvPipe_Format encFormat, NvPipe_Compression compression, NvPipe_Codec codec, float bitrateMbps, int targetFPS);
-      ServerPipeRTSP(int port, NvPipe_Format encFormat, NvPipe_Compression compression, NvPipe_Codec codec);
-      ServerPipeRTSP(int port, NvPipe_Format encFormat, NvPipe_Compression compression);
+      ServerPipeRTSP(std::string ipAddress, int port, NvPipe_Format encFormat, NvPipe_Compression compression, NvPipe_Codec codec, float bitrateMbps, int targetFPS);
+      ServerPipeRTSP(std::string ipAddress, int port, NvPipe_Format encFormat, NvPipe_Compression compression, NvPipe_Codec codec);
+      ServerPipeRTSP(std::string ipAddress, int port, NvPipe_Format encFormat, NvPipe_Compression compression);
 
       virtual ByteObject send_frame(cv::Mat mat, uint32_t ts = 0) override;
 
@@ -69,6 +69,7 @@ namespace nvenc_rtsp
       ssize_t startCodePosition(uchar* buffer, int maxSize, size_t offset);
       void get_NalPackage(uchar* buffer, int maxSize, int *head, int *tail, int *length);
 
+      std::string m_ipAddress;
       int m_port = 0;
       xop::MediaSessionId m_sessionId;
       xop::RtspServer* m_server;

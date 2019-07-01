@@ -49,19 +49,19 @@ using namespace nvenc_rtsp;
 
 std::mutex ServerPipeRTSP::m_coutMutex;
 
-ServerPipeRTSP::ServerPipeRTSP(int _port, NvPipe_Format _encFormat, NvPipe_Compression _compression, NvPipe_Codec _codec, float _bitrateMbps, int _targetFPS)
-: Encoder(_encFormat, _compression, _codec, _bitrateMbps, _targetFPS), m_port(_port)
+ServerPipeRTSP::ServerPipeRTSP(std::string _ipAddress, int _port, NvPipe_Format _encFormat, NvPipe_Compression _compression, NvPipe_Codec _codec, float _bitrateMbps, int _targetFPS)
+: Encoder(_encFormat, _compression, _codec, _bitrateMbps, _targetFPS), m_ipAddress(_ipAddress), m_port(_port)
 {
 }
 
-ServerPipeRTSP::ServerPipeRTSP(int _port, NvPipe_Format _encFormat, NvPipe_Compression _compression, NvPipe_Codec _codec)
-: ServerPipeRTSP(_port, _encFormat, _compression, _codec, 32, 90)
+ServerPipeRTSP::ServerPipeRTSP(std::string _ipAddress, int _port, NvPipe_Format _encFormat, NvPipe_Compression _compression, NvPipe_Codec _codec)
+: ServerPipeRTSP(_ipAddress, _port, _encFormat, _compression, _codec, 32, 90)
 {
     
 }
 
-ServerPipeRTSP::ServerPipeRTSP(int _port, NvPipe_Format _encFormat, NvPipe_Compression _compression)
-: ServerPipeRTSP(_port, _encFormat, _compression, NVPIPE_H264, 32, 90)
+ServerPipeRTSP::ServerPipeRTSP(std::string _ipAddress, int _port, NvPipe_Format _encFormat, NvPipe_Compression _compression)
+: ServerPipeRTSP(_ipAddress, _port, _encFormat, _compression, NVPIPE_H264, 32, 90)
 {
 
 }
@@ -73,7 +73,7 @@ bool ServerPipeRTSP::init_Loop(int _width, int _height, int _bytesPerPixel)
     // RTSP ############################################################
     m_rtspThread = thread([&, _width, _height, _bytesPerPixel]() {
         int clients = 0;
-        std::string ip = xop::NetInterface::getLocalIPAddress();
+        std::string ip = m_ipAddress; // xop::NetInterface::getLocalIPAddress();
         std::string rtspUrl;
 
         std::shared_ptr<xop::EventLoop> eventLoop(new xop::EventLoop());
