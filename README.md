@@ -45,7 +45,7 @@ int main(int argc, char *argv[])
                            videoMatUpdated = true;
                          });
         
-    // FILL OUT: Start camera image with OpenCV 8UC4 BGRA format
+    // FILL OUT: Start camera image with OpenCV CV_8UC4 RGBA format
 
     // Main Loop ############################################################
     while (key != 27)
