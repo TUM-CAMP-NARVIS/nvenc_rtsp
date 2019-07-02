@@ -64,5 +64,12 @@ Run ```conan profile update settings.compiler.libcxx="libstdc++11" default``` in
 
 The executables are located inside the folder build/bin/
 
+## Reference Third-Party
+
+RTSP Server:
+https://github.com/PHZ76/RtspServer (MIT Licence), adapted to project by Kevin Yu
+
+RTSP Client:
+https://github.com/sliver-chen/Simple-Rtsp-Client (no Licence), adapted to project by Kevin Yu
 
 &copy; Research group MITI
