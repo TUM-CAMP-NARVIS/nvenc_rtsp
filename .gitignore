@@ -3,4 +3,3 @@ build/*
 app/*
 .vscode/*
 src/.vscode/*
-3rdParty/NvPipe/*
