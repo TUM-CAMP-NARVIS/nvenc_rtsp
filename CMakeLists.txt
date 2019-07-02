@@ -61,17 +61,8 @@ include_directories(${OPENCV_INCLUDE_DIRS})
 link_directories(${OpenCV_LIBRARY_DIRS})
 
 #################################################################################################
-# CUDA & NVPipe Build Settings
+# NVPipe
 #################################################################################################
-
-find_package(CUDA REQUIRED)
-
-# Construct path to CUDA driver API lib (not provided by FindCUDA)
-get_filename_component(CUDA_LIB_DIR ${CUDA_cudart_static_LIBRARY} DIRECTORY)
-find_library(CUDA_LIB NAMES cuda HINTS ${CUDA_LIB_DIR})
-
-# Set C++ standard
-set(CMAKE_CXX_STANDARD 11)
 
 # Options
 option(NVPIPE_WITH_ENCODER "Enables the NvPipe encoding interface." ON)
@@ -79,56 +70,7 @@ option(NVPIPE_WITH_DECODER "Enables the NvPipe decoding interface." ON)
 option(NVPIPE_WITH_OPENGL "Enables the NvPipe OpenGL interface." OFF)
 option(NVPIPE_BUILD_EXAMPLES "Builds the NvPipe example applications (requires both encoder and decoder)." OFF)
 
-# Header
-configure_file(3rdParty/NvPipe/NvPipe.h.in include/NvPipe/NvPipe.h @ONLY)
-include_directories(${CUDA_INCLUDE_DIRS})
-
-# NvPipe shared library
-list(APPEND NVPIPE_SOURCES
-    3rdParty/NvPipe/NvPipe.cu
-    3rdParty/NvPipe/Video_Codec_SDK_9.0.20/Samples/Utils/ColorSpace.cu
-    )
-list(APPEND NVPIPE_LIBRARIES
-    ${CMAKE_DL_LIBS}
-    ${CUDA_LIBRARIES}
-    ${CUDA_LIB}
-    )
-
-if (NVPIPE_WITH_ENCODER)
-    list(APPEND NVPIPE_SOURCES
-        3rdParty/NvPipe/Video_Codec_SDK_9.0.20/Samples/NvCodec/NvEncoder/NvEncoder.cpp
-        3rdParty/NvPipe/Video_Codec_SDK_9.0.20/Samples/NvCodec/NvEncoder/NvEncoderCuda.cpp
-        )
-endif()
-
-if (NVPIPE_WITH_DECODER)    
-    list(APPEND NVPIPE_SOURCES
-        3rdParty/NvPipe/Video_Codec_SDK_9.0.20/Samples/NvCodec/NvDecoder/NvDecoder.cpp
-        )
-    list(APPEND NVPIPE_LIBRARIES
-        nvcuvid
-        )
-
-    if (WIN32)
-        if (CMAKE_SIZEOF_VOID_P EQUAL 8)
-            link_directories(3rdParty/NvPipe/Video_Codec_SDK_9.0.20/Lib/x64)
-        elseif (CMAKE_SIZEOF_VOID_P EQUAL 4)
-            link_directories(3rdParty/NvPipe/Video_Codec_SDK_9.0.20/Lib/Win32)
-        endif()    
-    endif()
-endif()
-
-include(GNUInstallDirs)
-
-cuda_add_library(CuNvPipe STATIC ${NVPIPE_SOURCES})
-target_include_directories(CuNvPipe PUBLIC
-    $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/include>
-    $<INSTALL_INTERFACE:$<INSTALL_PREFIX>/include>
-    )
-target_include_directories(CuNvPipe PRIVATE
-    $<BUILD_INTERFACE:3rdParty/NvPipe/Video_Codec_SDK_9.0.20/Samples 3rdParty/NvPipe/Video_Codec_SDK_9.0.20/Samples/NvCodec 3rdParty/NvPipe/Video_Codec_SDK_9.0.20/include ${CUDA_INCLUDE_DIRS}>
-    )
-target_link_libraries(CuNvPipe ${NVPIPE_LIBRARIES} )
+add_subdirectory(3rdParty/NvPipe)
 
 #################################################################################################
 # RTSP Server and Client
@@ -157,7 +99,7 @@ endif()
 target_include_directories(nvenc_rtsp PUBLIC include ${CUDA_INCLUDE_DIRS})
 target_link_libraries(nvenc_rtsp PUBLIC
 	rtspConn
-    	CuNvPipe
+    	NvPipe
 	${OpenCV_LIBRARIES}
 	)
 #################################################################################################
