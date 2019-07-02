@@ -1,0 +1,3 @@
+[submodule "3rdParty/NvPipe"]
+	path = 3rdParty/NvPipe
+	url = https://github.com/NVIDIA/NvPipe.git
