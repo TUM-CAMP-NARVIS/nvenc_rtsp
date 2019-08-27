@@ -71,6 +71,13 @@ option(NVPIPE_WITH_OPENGL "Enables the NvPipe OpenGL interface." OFF)
 option(NVPIPE_BUILD_EXAMPLES "Builds the NvPipe example applications (requires both encoder and decoder)." OFF)
 
 add_subdirectory(3rdParty/NvPipe)
+if (WIN32)
+    if (CMAKE_SIZEOF_VOID_P EQUAL 8)
+        file(COPY 3rdParty/NvPipe/src/Video_Codec_SDK_9.0.20/Lib/x64/nvcuvid.lib DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
+    elseif (CMAKE_SIZEOF_VOID_P EQUAL 4)
+        file(COPY 3rdParty/NvPipe/src/Video_Codec_SDK_9.0.20/Lib/Win32/nvcuvid.lib DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
+    endif()    
+endif()
 
 #################################################################################################
 # RTSP Server and Client
