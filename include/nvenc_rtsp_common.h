@@ -5,7 +5,12 @@
 #include <iostream>
 #include <thread>
 #include <vector>
+
+#ifdef _WIN32
+#include <io.h>
+#elif __unix__
 #include <unistd.h>
+#endif
 #include <cuda_runtime_api.h>
 #include <opencv2/opencv.hpp>
 
@@ -55,11 +60,13 @@
 
 // If defined, time will be displayed
 //#define DISPPIPETIME
-
+#if defined(_MSC_VER)
+#include <BaseTsd.h>
+typedef SSIZE_T ssize_t;
+#endif
 
 namespace nvenc_rtsp
 {
-
     class Timer
     {
     public:

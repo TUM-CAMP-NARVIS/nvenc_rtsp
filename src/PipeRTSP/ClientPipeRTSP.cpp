@@ -132,7 +132,11 @@ ClientPipeRTSP::ClientPipeRTSP(std::string _rtspAddress, NvPipe_Format _decForma
     m_player->Play(m_rtspAddress.c_str());
 
     //provide some time for the player to connect
-    usleep(500000);
+#ifdef _WIN64
+	Sleep(500);
+#elif __unix__
+	usleep(500000);
+#endif
 }
 
 ClientPipeRTSP::ClientPipeRTSP(std::string _rtspAddress, NvPipe_Format _decFormat, RecvCallFn _recv_cb)
