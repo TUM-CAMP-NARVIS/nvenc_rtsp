@@ -8,7 +8,7 @@
 
 #include "RtspPlayer.h"
 
-#ifdef _WIN64
+#ifdef _WIN32
 #define NOMINMAX
 #include <WinSock2.h>
 #include <WS2tcpip.h>
@@ -128,7 +128,7 @@ namespace RK {
 			_Eventfd = _RtpVideoSocket > _Eventfd ? _RtpVideoSocket : _Eventfd;//std::max(_RtpVideoSocket, _Eventfd);
             
 
-#ifdef _WIN64
+#ifdef _WIN32
 			u_long ul = true;
 			if (ioctlsocket(_RtpVideoSocket, FIONBIO, &ul))
 			{
@@ -301,7 +301,7 @@ namespace RK {
         
         const unsigned char natpacket[] = {0x80, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
         ::sendto(_RtpVideoSocket, (const char*)natpacket, sizeof(natpacket), 0, (const struct sockaddr *)&remoteAddr, (socklen_t)sizeof(remoteAddr));
-        
+
         return true;
     }
     
@@ -461,7 +461,7 @@ namespace RK {
 			log(TAG, "async connecting...");
 			while (!PlayLoop(ip, port))
 			{
-#ifdef _WIN64
+#ifdef _WIN32
 				Sleep(1000);
 #elif __unix__
 				usleep(100000);
@@ -480,7 +480,7 @@ namespace RK {
 
         while (!NetworkInit(ip, port) && !_Terminated)
         {
-#ifdef _WIN64
+#ifdef _WIN32
 			Sleep(1000);
 #elif __unix__
 			usleep(100000);

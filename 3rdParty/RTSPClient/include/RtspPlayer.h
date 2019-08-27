@@ -14,7 +14,7 @@
 typedef SSIZE_T ssize_t;
 #endif
 
-#ifdef _WIN64
+#ifdef _WIN32
 #include <WinSock2.h>
 #include <WS2tcpip.h>
 #include <Windows.h>
