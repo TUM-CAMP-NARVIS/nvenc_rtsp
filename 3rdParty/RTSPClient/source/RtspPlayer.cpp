@@ -273,7 +273,8 @@ namespace RK {
         remoteAddr.sin_addr.s_addr = inet_addr(_rtspip);
         
         const unsigned char natpacket[] = {0x80, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
-        ::sendto(_RtpVideoSocket, natpacket, sizeof(natpacket), 0, (const struct sockaddr *)&remoteAddr, (socklen_t)sizeof(remoteAddr));
+        ::sendto(_RtpVideoSocket, (const char*)natpacket, sizeof(natpacket), 0, (const struct sockaddr *)&remoteAddr, (socklen_t)sizeof(remoteAddr));
+
         
         return true;
     }
