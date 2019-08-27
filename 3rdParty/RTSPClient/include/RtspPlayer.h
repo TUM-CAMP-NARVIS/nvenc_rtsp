@@ -9,19 +9,32 @@
 #ifndef RtspPlayer_h
 #define RtspPlayer_h
 
-#include <iostream>
-#include <thread>
-#include <vector>
-#include <atomic>
+#if defined(_MSC_VER)
+#include <BaseTsd.h>
+typedef SSIZE_T ssize_t;
+#endif
+
+#ifdef _WIN32
+#include <WinSock2.h>
+#include <WS2tcpip.h>
+#include <Windows.h>
+#include <io.h>
+#elif __unix__
 #include <unistd.h>
-#include <string.h>
-#include <functional>
 #include <netdb.h>
-#include <sys/types.h>
 #include <sys/socket.h>
 #include <arpa/inet.h>
 #include <sys/ioctl.h>
 #include <sys/select.h>
+#endif
+
+#include <iostream>
+#include <thread>
+#include <vector>
+#include <atomic>
+#include <string.h>
+#include <functional>
+#include <sys/types.h>
 #include <mutex>
 
 extern "C" {

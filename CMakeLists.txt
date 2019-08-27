@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.2)
-project(ArtekMedNvPipe VERSION 1.0.0 LANGUAGES CXX C)
+project(nvenc_rtsp VERSION 1.0.0 LANGUAGES CXX C)
 
 # **********************************************************************************
 #                                                                                   #

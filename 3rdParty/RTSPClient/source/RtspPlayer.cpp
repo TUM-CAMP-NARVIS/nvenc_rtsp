@@ -7,16 +7,25 @@
 //
 
 #include "RtspPlayer.h"
+
+#ifdef _WIN32
+#define NOMINMAX
+#include <WinSock2.h>
+#include <WS2tcpip.h>
+#include <Windows.h>
+#include <io.h>
+#elif __unix__
 #include <unistd.h>
-#include <cstring>
-#include <stdio.h>
-#include <stdlib.h>
-#include <unistd.h>
-#include <string.h>
-#include <sys/types.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <netdb.h>
+#endif
+
+#include <cstring>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <sys/types.h>
 
 #define log(tag,fmt,...)\
 do {\
@@ -79,7 +88,7 @@ namespace RK {
             return false;
         }
 
-        _Eventfd = std::max(_RtspSocket, _Eventfd);
+        _Eventfd = _RtspSocket > _Eventfd ? _RtspSocket : _Eventfd;  //std::max(_RtspSocket, _Eventfd);
         
         // int ul = true;
         // if (::ioctl(_RtspSocket, FIONBIO, &ul) < 0) {
@@ -112,14 +121,24 @@ namespace RK {
                 log(TAG, "rtp video socket init failed");
                 return false;
             }
-            _Eventfd = std::max(_RtpVideoSocket, _Eventfd);
+            _Eventfd = _RtpVideoSocket > _Eventfd ? _RtpVideoSocket : _Eventfd;//std::max(_RtpVideoSocket, _Eventfd);
             
+#ifdef _WIN32
+            u_long ul = true;
+            if (ioctlsocket(_RtpVideoSocket, FIONBIO, &ul))
+            {
+                log(TAG, "failed to set rtp video socket non block");
+                    ::close(_RtpVideoSocket);
+                    return false;
+            }
+#elif __unix__
             int ul = true;
             if (::ioctl(_RtpVideoSocket, FIONBIO, &ul) < 0) {
                 log(TAG, "failed to set rtp video socket non block");
                 ::close(_RtpVideoSocket);
                 return false;
-            }
+        }
+#endif
             
             _RtpVideoAddr.sin_family = AF_INET;
             _RtpVideoAddr.sin_addr.s_addr = INADDR_ANY;
@@ -273,7 +292,7 @@ namespace RK {
         remoteAddr.sin_addr.s_addr = inet_addr(_rtspip);
         
         const unsigned char natpacket[] = {0x80, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
-        ::sendto(_RtpVideoSocket, natpacket, sizeof(natpacket), 0, (const struct sockaddr *)&remoteAddr, (socklen_t)sizeof(remoteAddr));
+        ::sendto(_RtpVideoSocket, (const char*)natpacket, sizeof(natpacket), 0, (const struct sockaddr *)&remoteAddr, (socklen_t)sizeof(remoteAddr));
         
         return true;
     }
@@ -418,24 +437,29 @@ namespace RK {
     // }
 
     bool RtspPlayer::Play(std::string url) {
-        char ip[256];
-        unsigned short port = 0;
-        _rtspurl = url;
 
-        if (!getIPFromUrl(url, ip, &port)) {
-            log(TAG, "get ip and port failed");
-            return false;
-        }
-        ::memcpy(_rtspip, ip, sizeof(ip));
+        _PlayThreadPtr = std::make_shared<std::thread>([&, url] {
+            char ip[256] = { 0 };
+            unsigned short port = 0;
+            _rtspurl = url;
 
-        // internal rtsp play thread
-        _PlayThreadPtr = std::make_shared<std::thread>([&, ip, port] {
-            
-            log(TAG, "async connecting...");
-            while(!PlayLoop(ip, port))
-            {
-                usleep(100000);
+            if (!getIPFromUrl(url, ip, &port)) {
+                log(TAG, "get ip and port failed");
+                return false;
             }
+            ::memcpy(_rtspip, ip, sizeof(ip));
+
+            log(TAG, "async connecting...");
+            while (!PlayLoop(ip, port))
+            {
+#ifdef _WIN32
+                Sleep(1000);
+#elif __unix__
+                usleep(100000);
+#endif
+
+            }
+
         });
 
         return true;
@@ -447,7 +471,11 @@ namespace RK {
 
         while (!NetworkInit(ip, port) && !_Terminated)
         {
-            usleep(1000000);
+#ifdef _WIN32
+            Sleep(1000);
+#elif __unix__
+            usleep(100000);
+#endif
         }
 
         EventInit();
@@ -482,7 +510,7 @@ namespace RK {
                 {
 
                     ::memset(recvbuf, 0, sizeof(recvbuf));
-                    ssize_t recvbytes = ::recv(_RtspSocket, recvbuf, sizeof(recvbuf), 0);
+                    ssize_t recvbytes = ::recv(_RtspSocket, (char*)recvbuf, sizeof(recvbuf), 0);
 
                     if (recvbytes <= 0)
                     {
@@ -506,7 +534,7 @@ namespace RK {
                     socklen_t socklen = sizeof(_RtpVideoAddr);
                     ::memset(recvbuf, 0, sizeof(recvbuf));
 
-                    ssize_t recvbytes = ::recvfrom(_RtpVideoSocket, recvbuf, sizeof(recvbuf), 0, (struct sockaddr *)&_RtpVideoAddr, &socklen);
+                    ssize_t recvbytes = ::recvfrom(_RtpVideoSocket, (char*)recvbuf, sizeof(recvbuf), 0, (struct sockaddr *)&_RtpVideoAddr, &socklen);
                     //log(TAG, "recv rtp video packet %ld bytes", recvbytes);
 
                     if (recvbytes > 0 && recv_cb != NULL)
