@@ -9,7 +9,7 @@ class nvenc_rtsp_Conan(ConanFile):
     # Not sure which opencv options are really necessary. Atleast one is needed for waitKey to function.
     default_options = {
         "shared": True, 
-        # "opencv:shared": True, 
+        "opencv:shared": True, 
         # "opencv:with_imgproc": True, 
         # "opencv:with_imgcodecs": True, 
         # "opencv:with_gtk": True, 
@@ -36,6 +36,8 @@ class nvenc_rtsp_Conan(ConanFile):
         self.copy(pattern="*.h", dst="include", src="3rdParty/RTSPClient/include")
         self.copy(pattern="*.h", dst="include", src="3rdParty/RTSPServer/include")
         self.copy(pattern="*.so", dst="lib", keep_path=False)
+        self.copy(pattern="*.lib", dst="lib", keep_path=False)
+        self.copy(pattern="*.dll", dst="bin", keep_path=False)
 
     def package_info(self):
         self.cpp_info.libs = tools.collect_libs(self)

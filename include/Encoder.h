@@ -47,13 +47,13 @@
 
 namespace nvenc_rtsp
 {
-  struct ByteObject
+  struct NVENCRTSP_EXPORT ByteObject
   {
     uchar *data;
     uint64_t size;
   };
 
-  class Encoder
+  class NVENCRTSP_EXPORT Encoder
   {
   public:
     Encoder(NvPipe_Format encFormat, NvPipe_Compression compression, NvPipe_Codec codec, float bitrateMbps, int targetFPS);

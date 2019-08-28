@@ -59,6 +59,19 @@
 *************************************************************************************/
 
 
+#ifdef _WIN32
+#   ifdef NVENCRTSP_DLL
+#       define NVENCRTSP_EXPORT __declspec( dllexport )
+#   else
+#       define NVENCRTSP_EXPORT __declspec( dllimport )
+#   endif
+#else // _WIN32
+#   define NVENCRTSP_EXPORT
+#endif
+
+
+
+
 // If defined, time will be displayed
 //#define DISPPIPETIME
 #if defined(_MSC_VER)
@@ -69,7 +82,7 @@ typedef SSIZE_T ssize_t;
 namespace nvenc_rtsp
 {
 
-    class Timer
+    class NVENCRTSP_EXPORT Timer
     {
     public:
         Timer()

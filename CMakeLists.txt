@@ -81,6 +81,7 @@ file(GLOB_RECURSE CORESOURCES src/*.cpp)
 
 if(BUILD_SHARED_LIBS)
 	add_library(nvenc_rtsp SHARED ${CORESOURCES} )
+	set_target_properties(nvenc_rtsp PROPERTIES COMPILE_DEFINITIONS "NVENCRTSP_DLL")
 else()
 	add_library(nvenc_rtsp STATIC ${CORESOURCES} )
 endif()
@@ -93,8 +94,6 @@ target_link_libraries(nvenc_rtsp PUBLIC
 	${CONAN_LIBS}
 	)
 #################################################################################################
-
-message(">> Run \"conan create . @artekmed/testing\"") 
 
 
 

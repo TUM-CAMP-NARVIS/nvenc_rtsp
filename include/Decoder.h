@@ -52,7 +52,7 @@ using RecvCallFn = std::function<void(cv::Mat, uint64_t timestamp)>;
 
 namespace nvenc_rtsp
 {
-  class Decoder
+  class NVENCRTSP_EXPORT Decoder
   {
   public:
     Decoder(NvPipe_Format decFormat, NvPipe_Codec codec, RecvCallFn recv_cb = NULL);
