@@ -15,6 +15,8 @@
 #include <cuda_runtime_api.h>
 #include <opencv2/opencv.hpp>
 
+#include "nvenc_rtsp_config.h"
+
 /* **********************************************************************************
 #  																					#
 # Copyright (c) 2019,															    #
@@ -57,20 +59,6 @@
 # SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.						#
 # 																					#
 *************************************************************************************/
-
-
-#ifdef _WIN32
-#   ifdef NVENCRTSP_DLL
-#       define NVENCRTSP_EXPORT __declspec( dllexport )
-#   else
-#       define NVENCRTSP_EXPORT __declspec( dllimport )
-#   endif
-#else // _WIN32
-#   define NVENCRTSP_EXPORT
-#endif
-
-
-
 
 // If defined, time will be displayed
 //#define DISPPIPETIME

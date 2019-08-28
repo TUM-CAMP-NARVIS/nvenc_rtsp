@@ -7,6 +7,8 @@
 #include <thread>
 #include <mutex>
 
+#include "nvenc_rtsp_config.h"
+
 /* **********************************************************************************
 #                                                                                   #
 # Copyright (c) 2019,                                                               #
@@ -52,7 +54,7 @@
 
 namespace nvenc_rtsp
 {
-  class ServerPipeRTSP : public Encoder
+  class NVENCRTSP_EXPORT ServerPipeRTSP : public Encoder
   {
     public:
       ServerPipeRTSP(std::string ipAddress, int port, NvPipe_Format encFormat, NvPipe_Compression compression, NvPipe_Codec codec, float bitrateMbps, int targetFPS);

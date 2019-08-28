@@ -89,8 +89,8 @@ endif()
 target_include_directories(nvenc_rtsp PUBLIC include)
 target_link_libraries(nvenc_rtsp PUBLIC
 	rtspConn
-    	${CUDA_LIBRARIES}
-    	${CUDA_LIB}
+	${CUDA_LIBRARIES}
+	${CUDA_LIB}
 	${CONAN_LIBS}
 	)
 #################################################################################################

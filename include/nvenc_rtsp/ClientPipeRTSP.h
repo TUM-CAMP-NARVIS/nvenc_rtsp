@@ -6,6 +6,8 @@
 #include <thread>
 #include <functional>
 
+#include "nvenc_rtsp_config.h"
+
 /* **********************************************************************************
 #                                                                                   #
 # Copyright (c) 2019,                                                               #
@@ -51,7 +53,7 @@
 
 namespace nvenc_rtsp
 {
-	class ClientPipeRTSP : public Decoder
+	class NVENCRTSP_EXPORT ClientPipeRTSP : public Decoder
 	{
 	  public:
 	    ClientPipeRTSP(std::string rtspAddress, NvPipe_Format decFormat, NvPipe_Codec codec, RecvCallFn recv_cb = NULL);
