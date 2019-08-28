@@ -7,7 +7,14 @@ class nvenc_rtsp_Conan(ConanFile):
     settings = "os", "compiler", "build_type", "arch"
     options = {"shared": [True, False]}
     # Not sure which opencv options are really necessary. Atleast one is needed for waitKey to function.
-    default_options = "shared=True", "opencv:shared=True", "opencv:with_imgproc=True", "opencv:with_imgcodecs=True", "opencv:with_gtk=True", "opencv:with_highgui=True"
+    default_options = {
+        "shared": True, 
+        # "opencv:shared": True, 
+        # "opencv:with_imgproc": True, 
+        # "opencv:with_imgcodecs": True, 
+        # "opencv:with_gtk": True, 
+        # "opencv:with_highgui": True
+        }
     exports_sources = "include*", "src*", "3rdParty*", "CMakeLists.txt"
 
     description="NVIDIA-accelerated video compresssion library with built-in rtsp streaming"
