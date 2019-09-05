@@ -74,7 +74,7 @@ ClientPipeRTSP::ClientPipeRTSP(std::string _rtspAddress, NvPipe_Format _decForma
             m_currentOffset += myLength;
 
             // find new NAL package.
-            if (!(bufferLength > 35 && bufferLength < 40 && type == 0))
+            if (!(bufferLength > 35 && bufferLength < 42 && type == 0))
                 return;
 
             if (m_pkgCorrupted)
