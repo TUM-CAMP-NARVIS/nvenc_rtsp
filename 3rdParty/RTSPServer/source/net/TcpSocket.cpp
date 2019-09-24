@@ -11,12 +11,17 @@ using namespace xop;
 TcpSocket::TcpSocket(SOCKET sockfd)
     : _sockfd(sockfd)
 {
-    
+#ifdef _WIN32
+	WSADATA wsaData;
+	WSAStartup(MAKEWORD(2, 0), &wsaData);
+#endif
 }
 
 TcpSocket::~TcpSocket()
 {
-	
+#ifdef _WIN32
+	WSACleanup();
+#endif
 }
 
 SOCKET TcpSocket::create()

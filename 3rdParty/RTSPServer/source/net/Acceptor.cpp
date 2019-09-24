@@ -9,6 +9,11 @@ Acceptor::Acceptor(EventLoop* eventLoop, std::string ip, uint16_t port)
     : _eventLoop(eventLoop)
     , _tcpSocket(new TcpSocket)
 {	
+#ifdef _WIN32
+	WSADATA wsaData;
+	WSAStartup(MAKEWORD(2, 0), &wsaData);
+#endif
+
     _tcpSocket->create();
     _acceptChannel.reset(new Channel(_tcpSocket->fd()));
     SocketUtil::setReuseAddr(_tcpSocket->fd());
@@ -22,6 +27,9 @@ Acceptor::~Acceptor()
     _eventLoop->removeChannel(_acceptChannel);
     _eventLoop->quit();
     _tcpSocket->close();
+#ifdef _WIN32
+	WSACleanup();
+#endif
 }
 
 int Acceptor::listen()

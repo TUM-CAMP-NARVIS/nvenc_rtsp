@@ -49,10 +49,17 @@ namespace RK {
         _NetWorked = false;
         _PlayState = RtspIdle;
 
+#ifdef _WIN32
+		WSADATA wsaData;
+		WSAStartup(MAKEWORD(2, 0), &wsaData);
+#endif
+
     }
 
     RtspPlayer::~RtspPlayer() {
-
+#ifdef _WIN32
+		WSACleanup();
+#endif
     }
     
     ImgProps RtspPlayer::GetImageProperties()
@@ -84,18 +91,12 @@ namespace RK {
     bool RtspPlayer::NetworkInit(const char *ip, const short port) {
         _RtspSocket = ::socket(AF_INET, SOCK_STREAM, 0);
         if (_RtspSocket < 0) {
-            log(TAG, "network init failed");
+            log(TAG, "network init failed ed");
             return false;
         }
 
         _Eventfd = _RtspSocket > _Eventfd ? _RtspSocket : _Eventfd;  //std::max(_RtspSocket, _Eventfd);
-        
-        // int ul = true;
-        // if (::ioctl(_RtspSocket, FIONBIO, &ul) < 0) {
-        //     log(TAG, "set socket block failed");
-        //     return false;
-        // }
-        
+                
         struct sockaddr_in serverAddr;
         serverAddr.sin_family = AF_INET;
         serverAddr.sin_port = htons(port);
@@ -128,7 +129,7 @@ namespace RK {
             if (ioctlsocket(_RtpVideoSocket, FIONBIO, &ul))
             {
                 log(TAG, "failed to set rtp video socket non block");
-                    ::close(_RtpVideoSocket);
+                    ::closesocket(_RtpVideoSocket);
                     return false;
             }
 #elif __unix__
@@ -248,15 +249,17 @@ namespace RK {
     }
     
     void RtspPlayer::SendVideoSetup() {
+
         int i = 0, j = 0;
         int videoTrackID = 0;
-        for (i = 0; i < _SdpParser->medias_count; i++) {        
+        for (i = 0; i < _SdpParser->medias_count; i++) {   
             if (strcmp(_SdpParser->medias[i].info.type, "video") == 0) {
                 for (j = 0; j < _SdpParser->medias[i].attributes_count; j++) {
                     if (strstr(_SdpParser->medias[i].attributes[j], "trackID")) {
                         ::sscanf(_SdpParser->medias[i].attributes[j], "control:trackID=%d", &videoTrackID);
                     }
                 }
+
                 {
                     std::lock_guard<std::mutex> guard(_portMutex);
                     _video_rtp_port = RTP_PORT;
@@ -389,7 +392,7 @@ namespace RK {
             case RtspIdle:
                 break;
             default:
-                log(TAG, "unkonw rtsp state");
+                log(TAG, "unknown rtsp state");
                 break;
         }
         
@@ -515,8 +518,14 @@ namespace RK {
                     if (recvbytes <= 0)
                     {
                         log(TAG, "async reconnecting...");
-                        close(_RtspSocket);
-                        close(_RtpVideoSocket);
+#if(_WIN32)
+						closesocket(_RtspSocket);
+						closesocket(_RtpVideoSocket);
+#else
+						close(_RtspSocket);
+						close(_RtpVideoSocket);
+#endif
+
                         return false;
                     }
                     else
@@ -573,25 +582,27 @@ namespace RK {
 
     bool RtspPlayer::PortIsOpen(int port)
     {
-        const char *hostname = "127.0.0.1";
-
         int socket = ::socket(AF_INET, SOCK_DGRAM, 0);
         if (socket < 0)
         {
-            log(TAG, "rtp video socket init failed");
             return false;
         }
+
         struct sockaddr_in addr;
         addr.sin_family = AF_INET;
         addr.sin_addr.s_addr = INADDR_ANY;
         addr.sin_port = htons(port);
-
         if (::bind(socket, (const struct sockaddr *)&addr, (socklen_t)sizeof(addr)) < 0)
         {
             return false;
         }
 
-        close(socket);
+#if(_WIN32)
+		closesocket(socket);
+#else
+		close(socket);
+#endif
+
         return true;
     }
 } // namespace RK
