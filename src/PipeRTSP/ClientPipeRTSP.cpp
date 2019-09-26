@@ -58,7 +58,7 @@ ClientPipeRTSP::ClientPipeRTSP(std::string _rtspAddress, NvPipe_Format _decForma
 
 			uint8_t frameCounter = buffer[3];
 
-			// Get Nalu type (0, if header, 28 if datapackage)
+			// Get Nalu type (0 if header, 28 if datapackage)
 			// Not pretty, since it is called in cvtBuffer again, but it does what it should.
 			struct RK::Nalu nalu = *(struct RK::Nalu *)(buffer + RTP_OFFSET);
 			int type = nalu.type;
@@ -66,11 +66,15 @@ ClientPipeRTSP::ClientPipeRTSP(std::string _rtspAddress, NvPipe_Format _decForma
 			m_timer.reset();
 
 			// New NAL package found, submit previous to decoder
+			// There are two header packages per NAL, we need both for a complete package
+			// Both header pkgs have a very destinct length. The thresholds seem to be randomly chosen
+			// but are actually the min and max possible length of the first header package.
+			// 2nd header pkg usually has 20 bytes
 			if (bufferLength > 35 && bufferLength < 42 && type == 0)
 			{
 
-				// .. but only if the previous package is not corrupted by missing subpackages.
-				if(!m_pkgCorrupted && frameCounter == m_currentFrameCounter + 1)
+				// only decode, if the previous package is not corrupted because of missing subpackages.
+				if(!m_pkgCorrupted && frameCounter == (m_currentFrameCounter + 1) % 256)
 				{
 
 					double interpretMs = m_timer.getElapsedMilliseconds();
@@ -81,6 +85,7 @@ ClientPipeRTSP::ClientPipeRTSP(std::string _rtspAddress, NvPipe_Format _decForma
 
 					if (size == 0)
 						return;
+
 					//Retrieve from GPU
 					m_timer.reset();
 					cv::Mat outMat;
@@ -114,19 +119,18 @@ ClientPipeRTSP::ClientPipeRTSP(std::string _rtspAddress, NvPipe_Format _decForma
 				m_currentOffset = 0;
 				m_pkgCorrupted = false;
 
+				m_currentTimestamp = (buffer[4] << 24) | (buffer[5] << 16) | (buffer[6] << 8) | buffer[7];
 			}
 			else
 			{
 				// inbetween NAL package.
 				if (m_pkgCorrupted) return;
 
-				if (frameCounter != m_currentFrameCounter + 1)
+				if (frameCounter != (m_currentFrameCounter + 1) % 256)
 				{
 					m_pkgCorrupted = true;
 					return;
 				}
-
-				m_currentTimestamp = (buffer[4] << 24) | (buffer[5] << 16) | (buffer[6] << 8) | buffer[7];
 			}
 
 			// Store subpackage into framebuffer
