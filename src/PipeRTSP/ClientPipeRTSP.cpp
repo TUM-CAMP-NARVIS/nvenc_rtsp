@@ -1,6 +1,5 @@
 #include "nvenc_rtsp_common.h"
 #include "nvenc_rtsp/ClientPipeRTSP.h"
-
 /* **********************************************************************************
 #                                                                                   #
 # Copyright (c) 2019,                                                               #
@@ -52,82 +51,96 @@ ClientPipeRTSP::ClientPipeRTSP(std::string _rtspAddress, NvPipe_Format _decForma
       m_rtspAddress(_rtspAddress)
 {
 
-    m_player = std::make_shared<RK::RtspPlayer>(
-        [&](uint8_t *buffer, ssize_t bufferLength) {
+	m_player = std::make_shared<RK::RtspPlayer>([&](uint8_t *buffer, ssize_t bufferLength)
+		{
 
-            if(!is_initiated()) return;
+			if (!is_initiated()) return;
 
-            m_timer.reset();
+			uint8_t frameCounter = buffer[3];
 
-            ssize_t myLength;
+			// Get Nalu type (0, if header, 28 if datapackage)
+			// Not pretty, since it is called in cvtBuffer again, but it does what it should.
+			struct RK::Nalu nalu = *(struct RK::Nalu *)(buffer + RTP_OFFSET);
+			int type = nalu.type;
+			
+			m_timer.reset();
 
-            uint8_t frameCounter = buffer[3];
-            if (frameCounter != m_currentFrameCounter + 1)
-                m_pkgCorrupted = true;
+			// New NAL package found, submit previous to decoder
+			if (bufferLength > 35 && bufferLength < 42 && type == 0)
+			{
 
-            uint32_t timestamp = (buffer[4] << 24) |(buffer[5] << 16) |(buffer[6] << 8) | buffer[7];
-            
-            int type = cvtBuffer(buffer, bufferLength, &m_frameBuffer.data()[m_currentOffset], &myLength);
+				// .. but only if the previous package is not corrupted by missing subpackages.
+				if(!m_pkgCorrupted && frameCounter == m_currentFrameCounter + 1)
+				{
 
-            m_currentFrameCounter = frameCounter;
+					double interpretMs = m_timer.getElapsedMilliseconds();
+					m_timer.reset();
 
-            m_currentOffset += myLength;
+					uint64_t size = NvPipe_Decode(m_decoder, m_frameBuffer, m_currentOffset, m_gpuDevice, m_width, m_height);
+					double decodeMs = m_timer.getElapsedMilliseconds();
 
-            // find new NAL package.
-            if (!(bufferLength > 35 && bufferLength < 42 && type == 0))
-                return;
+					if (size == 0)
+						return;
+					//Retrieve from GPU
+					m_timer.reset();
+					cv::Mat outMat;
+					switch (m_bytesPerPixel)
+					{
+					case 4:
+					{
+						outMat = cv::Mat(cv::Size(m_width, m_height), CV_8UC4);
+						cudaMemcpy(outMat.data, m_gpuDevice, m_dataSize, cudaMemcpyDeviceToHost);
+						break;
+					}
+					case 2:
+					{
+						outMat = cv::Mat(cv::Size(m_width, m_height), CV_16UC1);
+						cudaMemcpy(outMat.data, m_gpuDevice, m_dataSize, cudaMemcpyDeviceToHost);
+						break;
+					}
+					}
 
-            if (m_pkgCorrupted)
-            {
-                m_currentOffset = 0;
-                m_pkgCorrupted = false;
-                return;
-            }
-
-            double interpretMs = m_timer.getElapsedMilliseconds();
-            m_timer.reset();
-
-            uint64_t size = NvPipe_Decode(m_decoder, m_frameBuffer.data(), m_currentOffset, m_gpuDevice, m_width, m_height);
-            double decodeMs = m_timer.getElapsedMilliseconds();
-
-            m_currentOffset = 0;
-            m_pkgCorrupted = false;
-
-            if (size == 0)
-                return;
-
-            //Retrieve from GPU
-            m_timer.reset();
-            cv::Mat outMat;
-            switch (m_bytesPerPixel)
-            {
-                case 4:
-                {
-                    outMat = cv::Mat(cv::Size(m_width, m_height), CV_8UC4);
-                    cudaMemcpy(outMat.data, m_gpuDevice, m_dataSize, cudaMemcpyDeviceToHost);
-                    break;
-                }
-                case 2:
-                {
-                    outMat = cv::Mat(cv::Size(m_width, m_height), CV_16UC1);
-                    cudaMemcpy(outMat.data, m_gpuDevice, m_dataSize, cudaMemcpyDeviceToHost);
-                    break;
-                }
-            }
-
-            double downloadMs = m_timer.getElapsedMilliseconds();
+					double downloadMs = m_timer.getElapsedMilliseconds();
 
 #ifdef DISPPIPETIME
-            std::cout << interpretMs << " " << std::setw(11) << decodeMs << std::setw(11) << downloadMs << std::endl;
+					std::cout << interpretMs << " " << std::setw(11) << decodeMs << std::setw(11) << downloadMs << std::endl;
 #endif
-            if (m_recv_cb != NULL)
-                m_recv_cb(outMat, timestamp);
-        }, "Stream");
+					if (m_recv_cb != NULL)
+						m_recv_cb(outMat, m_currentTimestamp);
 
-    m_player->imgPropRdy_cb= [&](int width, int height, int bytesPerPixel)
-    {
-        init_VideoSize(width, height, bytesPerPixel);
-    };
+				}
+
+				// Reset variables for new frame
+				m_currentOffset = 0;
+				m_pkgCorrupted = false;
+
+			}
+			else
+			{
+				// inbetween NAL package.
+				if (m_pkgCorrupted) return;
+
+				if (frameCounter != m_currentFrameCounter + 1)
+				{
+					m_pkgCorrupted = true;
+					return;
+				}
+
+				m_currentTimestamp = (buffer[4] << 24) | (buffer[5] << 16) | (buffer[6] << 8) | buffer[7];
+			}
+
+			// Store subpackage into framebuffer
+			m_currentFrameCounter = frameCounter;
+			ssize_t rdLength;
+			cvtBuffer(buffer, bufferLength, &m_frameBuffer[m_currentOffset], &rdLength);
+			m_currentOffset += rdLength;
+
+		}, "Stream");
+
+	m_player->imgPropRdy_cb = [&](int width, int height, int bytesPerPixel)
+	{
+		init_VideoSize(width, height, bytesPerPixel);
+	};
 
     m_player->Play(m_rtspAddress.c_str());
 

@@ -82,7 +82,7 @@ namespace nvenc_rtsp
     NvPipe_Codec m_codec;
     NvPipe_Format m_decFormat;
 
-    std::vector<uint8_t> m_frameBuffer;
+    uint8_t* m_frameBuffer;
     void *m_gpuDevice;
 
     Timer m_timer;

@@ -68,6 +68,7 @@ namespace nvenc_rtsp
 	    uint8_t m_currentFrameCounter = 0;
 	    bool m_pkgCorrupted = false;
 	    int m_currentOffset = 0;
+		uint32_t m_currentTimestamp = 0;
 
 	    RK::RtspPlayer::Ptr m_player;
 	    

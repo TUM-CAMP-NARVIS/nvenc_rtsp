@@ -68,7 +68,7 @@ bool Decoder::init_VideoSize(int width, int height, int bytesPerPixel)
     m_height = height;
     m_bytesPerPixel = bytesPerPixel;
     m_dataSize = m_width * m_height * m_bytesPerPixel;
-    m_frameBuffer = std::vector<uint8_t>(m_dataSize);
+	m_frameBuffer = (uint8_t *)malloc(m_dataSize);
 
     cudaMalloc(&m_gpuDevice, m_dataSize);
 
@@ -78,6 +78,7 @@ bool Decoder::init_VideoSize(int width, int height, int bytesPerPixel)
 
 void Decoder::cleanUp()
 {
+	free(m_frameBuffer);
     if (m_initiated)
     {
         cudaFree(m_gpuDevice);
