@@ -1,5 +1,6 @@
 #include "nvenc_rtsp_common.h"
 #include "nvenc_rtsp/ClientPipeRTSP.h"
+
 /* **********************************************************************************
 #                                                                                   #
 # Copyright (c) 2019,                                                               #
@@ -64,7 +65,6 @@ ClientPipeRTSP::ClientPipeRTSP(std::string _rtspAddress, NvPipe_Format _decForma
 			int type = nalu.type;
 			
 			m_timer.reset();
-
 			// New NAL package found, submit previous to decoder
 			// There are two header packages per NAL, we need both for a complete package
 			// Both header pkgs have a very destinct length. The thresholds seem to be randomly chosen
@@ -74,9 +74,8 @@ ClientPipeRTSP::ClientPipeRTSP(std::string _rtspAddress, NvPipe_Format _decForma
 			{
 
 				// only decode, if the previous package is not corrupted because of missing subpackages.
-				if(!m_pkgCorrupted && frameCounter == (m_currentFrameCounter + 1) % 256)
+				if(!m_pkgCorrupted && frameCounter == ((m_currentFrameCounter + 1) % 256) && m_prevPkgSize < MAX_RTP_PAYLOAD_SIZE + RTP_HEADER_SIZE)
 				{
-
 					double interpretMs = m_timer.getElapsedMilliseconds();
 					m_timer.reset();
 
@@ -112,7 +111,6 @@ ClientPipeRTSP::ClientPipeRTSP(std::string _rtspAddress, NvPipe_Format _decForma
 #endif
 					if (m_recv_cb != NULL)
 						m_recv_cb(outMat, m_currentTimestamp);
-
 				}
 
 				// Reset variables for new frame
@@ -123,21 +121,22 @@ ClientPipeRTSP::ClientPipeRTSP(std::string _rtspAddress, NvPipe_Format _decForma
 			}
 			else
 			{
+
 				// inbetween NAL package.
 				if (m_pkgCorrupted) return;
 
-				if (frameCounter != (m_currentFrameCounter + 1) % 256)
+				if (frameCounter != ((m_currentFrameCounter + 1) % 256))
 				{
 					m_pkgCorrupted = true;
 					return;
 				}
 			}
-
 			// Store subpackage into framebuffer
 			m_currentFrameCounter = frameCounter;
 			ssize_t rdLength;
 			cvtBuffer(buffer, bufferLength, &m_frameBuffer[m_currentOffset], &rdLength);
 			m_currentOffset += rdLength;
+			m_prevPkgSize = bufferLength;
 
 		}, "Stream");
 

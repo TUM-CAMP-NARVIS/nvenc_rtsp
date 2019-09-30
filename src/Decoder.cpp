@@ -52,7 +52,7 @@ Decoder::Decoder(NvPipe_Format _decFormat, NvPipe_Codec _codec, RecvCallFn _recv
       m_codec(_codec),
       m_recv_cb(_recv_cb)
 {
-    m_decoder = NvPipe_CreateDecoder(m_decFormat, m_codec, 100, 100); //Start with some width and height, remember to set resolution later on via init_Decoder
+    m_decoder = NvPipe_CreateDecoder(m_decFormat, m_codec, 1, 1); //Start with some width and height, remember to set resolution later on via init_Decoder
     if (!m_decoder)
         std::cerr << "Failed to create decoder: " << NvPipe_GetError(NULL) << std::endl;    
 }

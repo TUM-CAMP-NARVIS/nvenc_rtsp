@@ -67,6 +67,9 @@
 typedef SSIZE_T ssize_t;
 #endif
 
+#define RTP_HEADER_SIZE   	   12
+#define MAX_RTP_PAYLOAD_SIZE   1420
+
 namespace nvenc_rtsp
 {
 
