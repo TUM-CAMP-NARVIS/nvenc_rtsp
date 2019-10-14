@@ -124,6 +124,12 @@ namespace RK {
             }
             _Eventfd = _RtpVideoSocket > _Eventfd ? _RtpVideoSocket : _Eventfd;//std::max(_RtpVideoSocket, _Eventfd);
             
+			size_t recvBufSize = 731504439992;
+			if (::setsockopt(_RtpVideoSocket, SOL_SOCKET, SO_RCVBUF, (const char*)&recvBufSize, (int)sizeof(recvBufSize)) == -1)
+			{
+				log(TAG, "failed to set rtsp video socket receive buffer size");
+			}
+
 #ifdef _WIN32
             u_long ul = true;
             if (ioctlsocket(_RtpVideoSocket, FIONBIO, &ul))

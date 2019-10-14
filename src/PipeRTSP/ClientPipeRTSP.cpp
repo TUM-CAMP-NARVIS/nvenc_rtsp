@@ -112,6 +112,10 @@ ClientPipeRTSP::ClientPipeRTSP(std::string _rtspAddress, NvPipe_Format _decForma
 					if (m_recv_cb != NULL)
 						m_recv_cb(outMat, m_currentTimestamp);
 				}
+				else
+				{
+					std::cout << "frame skipped" << std::endl;
+				}
 
 				// Reset variables for new frame
 				m_currentOffset = 0;
