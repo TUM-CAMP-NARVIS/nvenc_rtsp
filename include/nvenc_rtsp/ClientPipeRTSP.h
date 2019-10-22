@@ -5,6 +5,8 @@
 #include "RtspPlayer.h"
 #include <thread>
 #include <functional>
+#include <queue>
+#include <tuple>
 
 #include "nvenc_rtsp_config.h"
 
@@ -55,24 +57,32 @@ namespace nvenc_rtsp
 {
 	class NVENCRTSP_EXPORT ClientPipeRTSP : public Decoder
 	{
-	  public:
-	    ClientPipeRTSP(std::string rtspAddress, NvPipe_Format decFormat, NvPipe_Codec codec, RecvCallFn recv_cb = NULL);
-			ClientPipeRTSP(std::string rtspAddress, NvPipe_Format decFormat, RecvCallFn recv_cb = NULL);
+	public:
+		ClientPipeRTSP(std::string rtspAddress, NvPipe_Format decFormat, NvPipe_Codec codec, RecvCallFn recv_cb = NULL);
+		ClientPipeRTSP(std::string rtspAddress, NvPipe_Format decFormat, RecvCallFn recv_cb = NULL);
 
-	    virtual void cleanUp() override;
+		virtual void cleanUp() override;
 
-	  private:
+	private:
+		int cvtBuffer(uint8_t *buf, ssize_t bufsize, uint8_t *outBuf, ssize_t *outLength);
 
-	    int cvtBuffer(uint8_t *buf, ssize_t bufsize, uint8_t *outBuf, ssize_t *outLength);
+		const short m_maxStoredFrames = 2;
 
-	    uint8_t m_currentFrameCounter = 0;
-	    bool m_pkgCorrupted = false;
+		uint8_t m_currentFrameCounter = 0;
+		bool m_pkgCorrupted = false;
 		int m_prevPkgSize = 0;
-	    int m_currentOffset = 0;
+		int m_currentOffset = 0;
 		uint32_t m_currentTimestamp = 0;
 
-	    RK::RtspPlayer::Ptr m_player;
-	    
-	    std::string m_rtspAddress;
+		RK::RtspPlayer::Ptr m_player;
+
+		bool m_runProcess = true;
+		std::unique_ptr<std::thread> m_decodeThread;
+		std::queue<std::tuple<uint8_t*, size_t, uint32_t>> m_decodeQueue;
+
+		std::unique_ptr<std::thread> m_processThread;
+		std::queue<std::tuple<cv::Mat, uint32_t>> m_processQueue;
+
+		std::string m_rtspAddress;
 	};
 }
