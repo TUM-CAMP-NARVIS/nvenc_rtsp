@@ -64,6 +64,36 @@ Run ```conan profile update settings.compiler.libcxx="libstdc++11" default``` in
 
 The executables are located inside the folder build/bin/
 
+## Tuning Streaming Performance
+
+If the resolution of the video stream is large and/or LOSSLESS H.264 compression is enabled, the network buffer of the UDP socket on the receiver side might reach its limit fairly quickly and starts to discard packages.
+To prevent this, nvenc_rtsp increases the UDP receive buffer size automatically on Windows.
+On Linux, the maximum size needs to be set on the OS.
+
+To check the current UDP/IP receive buffer default and limit, type the following commands into the terminal:
+
+```
+$ sysctl net.core.rmem_max
+net.core.rmem_max = 212992
+$ sysctl net.core.rmem_default
+net.core.rmem_default = 212992
+```
+
+For increasing the buffer size permanently, add the following lines into /etc/sysctl.conf and reboot:
+
+```
+net.core.rmem_max=26214400
+net.core.rmem_default=26214400
+```
+
+For immediate effect, type into the terminal:
+```
+$ sudo sysctl -w net.core.rmem_max=26214400
+net.core.rmem_max = 26214400
+$ sudo sysctl -w net.core.rmem_default=26214400
+net.core.rmem_default = 26214400
+```
+
 ## Reference Third-Party
 
 RTSP Server:
