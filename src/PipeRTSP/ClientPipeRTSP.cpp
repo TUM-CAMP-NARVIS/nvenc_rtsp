@@ -51,7 +51,7 @@ ClientPipeRTSP::ClientPipeRTSP(std::string _rtspAddress, NvPipe_Format _decForma
 	: Decoder(_decFormat, _codec, _recv_cb),
 	m_rtspAddress(_rtspAddress)
 {
-	m_decodeThread = std::make_unique<std::thread>(
+	m_decodeThread.reset(new std::thread(
 		[&]() {
 			while (m_runProcess)
 			{
@@ -99,8 +99,8 @@ ClientPipeRTSP::ClientPipeRTSP(std::string _rtspAddress, NvPipe_Format _decForma
 
 			}
 		}
-	);
-	m_processThread = std::make_unique<std::thread>(
+	));
+	m_processThread.reset( new std::thread(
 		[&]() {
 			while (m_runProcess)
 			{
@@ -113,7 +113,7 @@ ClientPipeRTSP::ClientPipeRTSP(std::string _rtspAddress, NvPipe_Format _decForma
 						m_recv_cb(std::get<0>(frame), std::get<1>(frame));
 				}
 			}
-		});
+		}));
 
 
 	m_player = std::make_shared<RK::RtspPlayer>([&](uint8_t *buffer, ssize_t bufferLength)
