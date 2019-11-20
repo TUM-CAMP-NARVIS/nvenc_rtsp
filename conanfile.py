@@ -20,8 +20,8 @@ class nvenc_rtsp_Conan(ConanFile):
     description="NVIDIA-accelerated video compresssion library with built-in rtsp streaming"
 
     requires = (
-        "opencv/[>=3.0]@camposs/stable",
-        "nvpipe/[>=0.2]@camposs/stable",
+        "opencv/[3.4.8]@camposs/stable",
+        "nvpipe/[0.2]@camposs/stable",
         )
 
 
