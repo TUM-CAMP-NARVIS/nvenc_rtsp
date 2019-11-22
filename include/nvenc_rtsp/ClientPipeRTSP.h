@@ -7,6 +7,8 @@
 #include <functional>
 #include <queue>
 #include <tuple>
+#include <mutex>
+#include <condition_variable>
 
 #include "nvenc_rtsp_config.h"
 
@@ -79,9 +81,13 @@ namespace nvenc_rtsp
 		bool m_runProcess = true;
 		std::unique_ptr<std::thread> m_decodeThread;
 		std::queue<std::tuple<uint8_t*, size_t, uint32_t>> m_decodeQueue;
+		std::mutex m_decodeMutex;
+		std::condition_variable m_decodeCV;
 
 		std::unique_ptr<std::thread> m_processThread;
 		std::queue<std::tuple<cv::Mat, uint32_t>> m_processQueue;
+		std::mutex m_processMutex;
+		std::condition_variable m_processCV;
 
 		std::string m_rtspAddress;
 	};

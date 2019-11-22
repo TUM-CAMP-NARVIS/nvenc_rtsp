@@ -26,6 +26,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <sys/types.h>
+#include <algorithm> 
 
 #define log(tag,fmt,...)\
 do {\
@@ -39,6 +40,7 @@ do {\
 namespace RK {
 
     std::mutex RtspPlayer::_portMutex;
+    std::vector<int> RtspPlayer::_known_used_Ports;
 
     RtspPlayer::RtspPlayer(RecvBufferFn recv_cb, std::string name)
     :   recv_cb(recv_cb)
@@ -275,6 +277,9 @@ namespace RK {
                     _video_rtcp_port = RTCP_PORT;
                     while (!PortIsOpen(_video_rtcp_port))
                         _video_rtcp_port++;
+
+                    _known_used_Ports.push_back(_video_rtp_port);
+                    _known_used_Ports.push_back(_video_rtcp_port);
                     RtspSetup(_rtspurl, videoTrackID, RTSPVIDEO_SETUP, _SdpParser->medias[i].info.proto, _video_rtp_port, _video_rtcp_port);
                 }
             }
@@ -489,6 +494,10 @@ namespace RK {
 
         EventInit();
 
+        struct timeval tv,tv1;
+        tv.tv_sec = 2;
+        tv.tv_usec = 0;
+
         while (!_Terminated)
         {
             FD_ZERO(&_readfd);
@@ -502,7 +511,9 @@ namespace RK {
                 FD_SET(_RtpVideoSocket, &_readfd);
             }
 
-            int r = ::select(_Eventfd + 1, &_readfd, &_writefd, &_errorfd, NULL);
+            memcpy(&tv1, &tv, sizeof(tv));
+
+            int r = ::select(_Eventfd + 1, &_readfd, &_writefd, &_errorfd, &tv1);
 
             if (r < 0)
             {
@@ -511,7 +522,8 @@ namespace RK {
             }
             else if (r == 0)
             {
-                log(TAG, "event over time...");
+                // Timeout
+                continue;
             }
             else
             {
@@ -581,13 +593,21 @@ namespace RK {
 
     void RtspPlayer::Stop()
     {
-        log(TAG, "client stopped");
         _Terminated = true;
         _PlayThreadPtr->join();
+        std::remove(_known_used_Ports.begin(), _known_used_Ports.end(), _video_rtp_port);
+        std::remove(_known_used_Ports.begin(), _known_used_Ports.end(), _video_rtcp_port);
+        log(TAG, "client stopped");
     }
 
     bool RtspPlayer::PortIsOpen(int port)
     {
+        for(int i=0;i<_known_used_Ports.size();i++)
+        {
+            if(_known_used_Ports[i] == port)
+                return false;
+        }
+
         int socket = ::socket(AF_INET, SOCK_DGRAM, 0);
         if (socket < 0)
         {
@@ -596,9 +616,11 @@ namespace RK {
 
         struct sockaddr_in addr;
         addr.sin_family = AF_INET;
+        addr.sin_addr.s_addr = 0;
         addr.sin_addr.s_addr = INADDR_ANY;
         addr.sin_port = htons(port);
-        if (::bind(socket, (const struct sockaddr *)&addr, (socklen_t)sizeof(addr)) < 0)
+
+        if (::bind(socket, (const struct sockaddr *)&addr, sizeof(struct sockaddr_in)) < 0)
         {
             return false;
         }

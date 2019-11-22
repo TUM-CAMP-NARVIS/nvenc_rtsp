@@ -55,48 +55,54 @@ ClientPipeRTSP::ClientPipeRTSP(std::string _rtspAddress, NvPipe_Format _decForma
 		[&]() {
 			while (m_runProcess)
 			{
-				if (!m_decodeQueue.empty())
+				std::unique_lock<std::mutex> lk(m_decodeMutex);
+				do
 				{
-					std::tuple<uint8_t*, size_t, uint32_t> frame = m_decodeQueue.front();
-					m_decodeQueue.pop();
+					if(!m_runProcess) return;
+					m_decodeCV.wait(lk);	
+				}while(m_decodeQueue.empty());
 
-					uint64_t size = NvPipe_Decode(m_decoder, std::get<0>(frame), std::get<1>(frame), m_gpuDevice, m_width, m_height);
-					double decodeMs = m_timer.getElapsedMilliseconds();
+        		std::tuple<uint8_t*, size_t, uint32_t> frame = m_decodeQueue.front();
+				m_decodeQueue.pop();
 
-					if (size == 0)
-						return;
+				uint64_t size = NvPipe_Decode(m_decoder, std::get<0>(frame), std::get<1>(frame), m_gpuDevice, m_width, m_height);
+				double decodeMs = m_timer.getElapsedMilliseconds();
 
-					//Retrieve from GPU
-					m_timer.reset();
-					cv::Mat outMat;
-					switch (m_bytesPerPixel)
-					{
-					case 4:
-					{
-						outMat = cv::Mat(cv::Size(m_width, m_height), CV_8UC4);
-						cudaMemcpy(outMat.data, m_gpuDevice, m_dataSize, cudaMemcpyDeviceToHost);
-						break;
-					}
-					case 2:
-					{
-						outMat = cv::Mat(cv::Size(m_width, m_height), CV_16UC1);
-						cudaMemcpy(outMat.data, m_gpuDevice, m_dataSize, cudaMemcpyDeviceToHost);
-						break;
-					}
-					}
+				if (size == 0)
+					return;
 
-					double downloadMs = m_timer.getElapsedMilliseconds();
-
-#ifdef DISPPIPETIME
-					std::cout << interpretMs << " " << std::setw(11) << decodeMs << std::setw(11) << downloadMs << std::endl;
-#endif
-					if (m_processQueue.size() < m_maxStoredFrames)
-					{
-						m_processQueue.push(std::tuple<cv::Mat, uint32_t>(outMat, std::get<2>(frame)));
-					}
-					free(std::get<0>(frame));
+				//Retrieve from GPU
+				m_timer.reset();
+				cv::Mat outMat;
+				switch (m_bytesPerPixel)
+				{
+				case 4:
+				{
+					outMat = cv::Mat(cv::Size(m_width, m_height), CV_8UC4);
+					cudaMemcpy(outMat.data, m_gpuDevice, m_dataSize, cudaMemcpyDeviceToHost);
+					break;
+				}
+				case 2:
+				{
+					outMat = cv::Mat(cv::Size(m_width, m_height), CV_16UC1);
+					cudaMemcpy(outMat.data, m_gpuDevice, m_dataSize, cudaMemcpyDeviceToHost);
+					break;
+				}
 				}
 
+				double downloadMs = m_timer.getElapsedMilliseconds();
+
+#ifdef DISPPIPETIME
+				std::cout << interpretMs << " " << std::setw(11) << decodeMs << std::setw(11) << downloadMs << std::endl;
+#endif
+				if (m_processQueue.size() < m_maxStoredFrames)
+				{
+					std::unique_lock<std::mutex> lk_2(m_processMutex);
+					m_processQueue.push(std::tuple<cv::Mat, uint32_t>(outMat, std::get<2>(frame)));
+					lk_2.unlock();
+        			m_processCV.notify_one();
+				}
+				free(std::get<0>(frame));
 			}
 		}
 	));
@@ -104,14 +110,19 @@ ClientPipeRTSP::ClientPipeRTSP(std::string _rtspAddress, NvPipe_Format _decForma
 		[&]() {
 			while (m_runProcess)
 			{
-				if (!m_processQueue.empty())
+				std::unique_lock<std::mutex> lk(m_processMutex);
+				do
 				{
-					std::tuple<cv::Mat, uint32_t> frame = m_processQueue.front();
-					m_processQueue.pop();
+					if(!m_runProcess) return;
+					m_processCV.wait(lk);	
+				}while(m_processQueue.empty());
 
-					if (m_recv_cb != NULL)
-						m_recv_cb(std::get<0>(frame), std::get<1>(frame));
-				}
+        		std::tuple<cv::Mat, uint32_t> frame = m_processQueue.front();
+				m_processQueue.pop();
+
+				if (m_recv_cb != NULL)
+					m_recv_cb(std::get<0>(frame), std::get<1>(frame));
+				
 			}
 		}));
 
@@ -136,7 +147,6 @@ ClientPipeRTSP::ClientPipeRTSP(std::string _rtspAddress, NvPipe_Format _decForma
 			// 2nd header pkg usually has 20 bytes
 			if (bufferLength > 35 && bufferLength < 42 && type == 0)
 			{
-
 				// only decode, if the previous package is not corrupted because of missing subpackages.
 				if (!m_pkgCorrupted && frameCounter == ((m_currentFrameCounter + 1) % 256) && m_prevPkgSize < MAX_RTP_PAYLOAD_SIZE + RTP_HEADER_SIZE)
 				{
@@ -148,7 +158,10 @@ ClientPipeRTSP::ClientPipeRTSP(std::string _rtspAddress, NvPipe_Format _decForma
 						uint8_t* framePointer = (uint8_t*)std::malloc(m_currentOffset);
 						std::memcpy(framePointer, m_frameBuffer, m_currentOffset);
 
+						std::unique_lock<std::mutex> lk(m_decodeMutex);
 						m_decodeQueue.push(std::tuple<uint8_t*, size_t, uint32_t>(framePointer, m_currentOffset, m_currentTimestamp));
+						lk.unlock();
+						m_decodeCV.notify_one();
 					}
 
 				}
@@ -245,13 +258,22 @@ void ClientPipeRTSP::cleanUp()
 	m_player->Stop();
 	Decoder::cleanUp();
 
+	m_decodeCV.notify_one();
 	m_decodeThread->join();
+
+	m_processCV.notify_one();
 	m_processThread->join();
+
 	while (!m_decodeQueue.empty())
 	{
 		auto frame = m_decodeQueue.front();
 		m_decodeQueue.pop();
 		free(std::get<0>(frame));
+	}
+
+	while (!m_processQueue.empty())
+	{
+		m_processQueue.pop();
 	}
 }
 
