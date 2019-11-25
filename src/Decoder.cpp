@@ -52,7 +52,7 @@ Decoder::Decoder(NvPipe_Format _decFormat, NvPipe_Codec _codec, RecvCallFn _recv
       m_codec(_codec),
       m_recv_cb(_recv_cb)
 {
-    m_decoder = NvPipe_CreateDecoder(m_decFormat, m_codec, 100, 100); //Start with some width and height, remember to set resolution later on via init_Decoder
+    m_decoder = NvPipe_CreateDecoder(m_decFormat, m_codec, 1, 1); //Start with some width and height, remember to set resolution later on via init_Decoder
     if (!m_decoder)
         std::cerr << "Failed to create decoder: " << NvPipe_GetError(NULL) << std::endl;    
 }
@@ -68,7 +68,7 @@ bool Decoder::init_VideoSize(int width, int height, int bytesPerPixel)
     m_height = height;
     m_bytesPerPixel = bytesPerPixel;
     m_dataSize = m_width * m_height * m_bytesPerPixel;
-    m_frameBuffer = std::vector<uint8_t>(m_dataSize);
+	m_frameBuffer = (uint8_t *)malloc(m_dataSize);
 
     cudaMalloc(&m_gpuDevice, m_dataSize);
 
@@ -78,6 +78,7 @@ bool Decoder::init_VideoSize(int width, int height, int bytesPerPixel)
 
 void Decoder::cleanUp()
 {
+	free(m_frameBuffer);
     if (m_initiated)
     {
         cudaFree(m_gpuDevice);

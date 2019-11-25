@@ -13,9 +13,7 @@
 #include <WinSock2.h>
 #include <WS2tcpip.h>
 #include <Windows.h>
-
 #include <io.h>
-
 #elif __unix__
 #include <unistd.h>
 #include <sys/socket.h>
@@ -26,10 +24,9 @@
 #include <cstring>
 #include <stdio.h>
 #include <stdlib.h>
-
 #include <string.h>
 #include <sys/types.h>
-
+#include <algorithm> 
 
 #define log(tag,fmt,...)\
 do {\
@@ -43,6 +40,7 @@ do {\
 namespace RK {
 
     std::mutex RtspPlayer::_portMutex;
+    std::vector<int> RtspPlayer::_known_used_Ports;
 
     RtspPlayer::RtspPlayer(RecvBufferFn recv_cb, std::string name)
     :   recv_cb(recv_cb)
@@ -53,10 +51,17 @@ namespace RK {
         _NetWorked = false;
         _PlayState = RtspIdle;
 
+#ifdef _WIN32
+		WSADATA wsaData;
+		WSAStartup(MAKEWORD(2, 0), &wsaData);
+#endif
+
     }
 
     RtspPlayer::~RtspPlayer() {
-
+#ifdef _WIN32
+		WSACleanup();
+#endif
     }
     
     ImgProps RtspPlayer::GetImageProperties()
@@ -88,18 +93,12 @@ namespace RK {
     bool RtspPlayer::NetworkInit(const char *ip, const short port) {
         _RtspSocket = ::socket(AF_INET, SOCK_STREAM, 0);
         if (_RtspSocket < 0) {
-            log(TAG, "network init failed");
+            log(TAG, "network init failed ed");
             return false;
         }
 
         _Eventfd = _RtspSocket > _Eventfd ? _RtspSocket : _Eventfd;  //std::max(_RtspSocket, _Eventfd);
-        
-        // int ul = true;
-        // if (::ioctl(_RtspSocket, FIONBIO, &ul) < 0) {
-        //     log(TAG, "set socket block failed");
-        //     return false;
-        // }
-        
+                
         struct sockaddr_in serverAddr;
         serverAddr.sin_family = AF_INET;
         serverAddr.sin_port = htons(port);
@@ -125,28 +124,30 @@ namespace RK {
                 log(TAG, "rtp video socket init failed");
                 return false;
             }
-			_Eventfd = _RtpVideoSocket > _Eventfd ? _RtpVideoSocket : _Eventfd;//std::max(_RtpVideoSocket, _Eventfd);
+            _Eventfd = _RtpVideoSocket > _Eventfd ? _RtpVideoSocket : _Eventfd;//std::max(_RtpVideoSocket, _Eventfd);
             
+			size_t recvBufSize = 731504439992;
+			if (::setsockopt(_RtpVideoSocket, SOL_SOCKET, SO_RCVBUF, (const char*)&recvBufSize, (int)sizeof(recvBufSize)) == -1)
+			{
+				log(TAG, "failed to set rtsp video socket receive buffer size");
+			}
 
 #ifdef _WIN32
-			u_long ul = true;
-			if (ioctlsocket(_RtpVideoSocket, FIONBIO, &ul))
-			{
-				log(TAG, "failed to set rtp video socket non block");
-					::close(_RtpVideoSocket);
-					return false;
-			}
+            u_long ul = true;
+            if (ioctlsocket(_RtpVideoSocket, FIONBIO, &ul))
+            {
+                log(TAG, "failed to set rtp video socket non block");
+                    ::closesocket(_RtpVideoSocket);
+                    return false;
+            }
 #elif __unix__
-			int ul = true;
-			if (::ioctl(_RtpVideoSocket, FIONBIO, &ul) < 0) {
-				log(TAG, "failed to set rtp video socket non block");
-				::close(_RtpVideoSocket);
-				return false;
-		}
+            int ul = true;
+            if (::ioctl(_RtpVideoSocket, FIONBIO, &ul) < 0) {
+                log(TAG, "failed to set rtp video socket non block");
+                ::close(_RtpVideoSocket);
+                return false;
+        }
 #endif
-
-
-
             
             _RtpVideoAddr.sin_family = AF_INET;
             _RtpVideoAddr.sin_addr.s_addr = INADDR_ANY;
@@ -256,15 +257,17 @@ namespace RK {
     }
     
     void RtspPlayer::SendVideoSetup() {
+
         int i = 0, j = 0;
         int videoTrackID = 0;
-        for (i = 0; i < _SdpParser->medias_count; i++) {        
+        for (i = 0; i < _SdpParser->medias_count; i++) {   
             if (strcmp(_SdpParser->medias[i].info.type, "video") == 0) {
                 for (j = 0; j < _SdpParser->medias[i].attributes_count; j++) {
                     if (strstr(_SdpParser->medias[i].attributes[j], "trackID")) {
                         ::sscanf(_SdpParser->medias[i].attributes[j], "control:trackID=%d", &videoTrackID);
                     }
                 }
+
                 {
                     std::lock_guard<std::mutex> guard(_portMutex);
                     _video_rtp_port = RTP_PORT;
@@ -274,6 +277,9 @@ namespace RK {
                     _video_rtcp_port = RTCP_PORT;
                     while (!PortIsOpen(_video_rtcp_port))
                         _video_rtcp_port++;
+
+                    _known_used_Ports.push_back(_video_rtp_port);
+                    _known_used_Ports.push_back(_video_rtcp_port);
                     RtspSetup(_rtspurl, videoTrackID, RTSPVIDEO_SETUP, _SdpParser->medias[i].info.proto, _video_rtp_port, _video_rtcp_port);
                 }
             }
@@ -301,7 +307,7 @@ namespace RK {
         
         const unsigned char natpacket[] = {0x80, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
         ::sendto(_RtpVideoSocket, (const char*)natpacket, sizeof(natpacket), 0, (const struct sockaddr *)&remoteAddr, (socklen_t)sizeof(remoteAddr));
-
+        
         return true;
     }
     
@@ -397,7 +403,7 @@ namespace RK {
             case RtspIdle:
                 break;
             default:
-                log(TAG, "unkonw rtsp state");
+                log(TAG, "unknown rtsp state");
                 break;
         }
         
@@ -481,13 +487,17 @@ namespace RK {
         while (!NetworkInit(ip, port) && !_Terminated)
         {
 #ifdef _WIN32
-			Sleep(1000);
+            Sleep(1000);
 #elif __unix__
-			usleep(100000);
+            usleep(100000);
 #endif
         }
 
         EventInit();
+
+        struct timeval tv,tv1;
+        tv.tv_sec = 2;
+        tv.tv_usec = 0;
 
         while (!_Terminated)
         {
@@ -502,7 +512,9 @@ namespace RK {
                 FD_SET(_RtpVideoSocket, &_readfd);
             }
 
-            int r = ::select(_Eventfd + 1, &_readfd, &_writefd, &_errorfd, NULL);
+            memcpy(&tv1, &tv, sizeof(tv));
+
+            int r = ::select(_Eventfd + 1, &_readfd, &_writefd, &_errorfd, &tv1);
 
             if (r < 0)
             {
@@ -511,7 +523,8 @@ namespace RK {
             }
             else if (r == 0)
             {
-                log(TAG, "event over time...");
+                // Timeout
+                continue;
             }
             else
             {
@@ -524,8 +537,14 @@ namespace RK {
                     if (recvbytes <= 0)
                     {
                         log(TAG, "async reconnecting...");
-                        close(_RtspSocket);
-                        close(_RtpVideoSocket);
+#if(_WIN32)
+						closesocket(_RtspSocket);
+						closesocket(_RtpVideoSocket);
+#else
+						close(_RtspSocket);
+						close(_RtpVideoSocket);
+#endif
+
                         return false;
                     }
                     else
@@ -575,32 +594,44 @@ namespace RK {
 
     void RtspPlayer::Stop()
     {
-        log(TAG, "client stopped");
         _Terminated = true;
         _PlayThreadPtr->join();
+        std::remove(_known_used_Ports.begin(), _known_used_Ports.end(), _video_rtp_port);
+        std::remove(_known_used_Ports.begin(), _known_used_Ports.end(), _video_rtcp_port);
+        log(TAG, "client stopped");
     }
 
     bool RtspPlayer::PortIsOpen(int port)
     {
-        const char *hostname = "127.0.0.1";
+        for(int i=0;i<_known_used_Ports.size();i++)
+        {
+            if(_known_used_Ports[i] == port)
+                return false;
+        }
 
         int socket = ::socket(AF_INET, SOCK_DGRAM, 0);
         if (socket < 0)
         {
-            log(TAG, "rtp video socket init failed");
             return false;
         }
+
         struct sockaddr_in addr;
         addr.sin_family = AF_INET;
+        addr.sin_addr.s_addr = 0;
         addr.sin_addr.s_addr = INADDR_ANY;
         addr.sin_port = htons(port);
 
-        if (::bind(socket, (const struct sockaddr *)&addr, (socklen_t)sizeof(addr)) < 0)
+        if (::bind(socket, (const struct sockaddr *)&addr, sizeof(struct sockaddr_in)) < 0)
         {
             return false;
         }
 
-        close(socket);
+#if(_WIN32)
+		closesocket(socket);
+#else
+		close(socket);
+#endif
+
         return true;
     }
 } // namespace RK

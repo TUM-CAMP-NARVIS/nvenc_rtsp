@@ -14,6 +14,8 @@
 #include <cuda_runtime_api.h>
 #include <opencv2/opencv.hpp>
 
+#include "nvenc_rtsp_config.h"
+
 /* **********************************************************************************
 #  																					#
 # Copyright (c) 2019,															    #
@@ -57,7 +59,6 @@
 # 																					#
 *************************************************************************************/
 
-
 // If defined, time will be displayed
 //#define DISPPIPETIME
 #if defined(_MSC_VER)
@@ -65,9 +66,13 @@
 typedef SSIZE_T ssize_t;
 #endif
 
+#define RTP_HEADER_SIZE   	   12
+#define MAX_RTP_PAYLOAD_SIZE   1420
+
 namespace nvenc_rtsp
 {
-    class Timer
+
+    class NVENCRTSP_EXPORT Timer
     {
     public:
         Timer()

@@ -52,7 +52,7 @@ using RecvCallFn = std::function<void(cv::Mat, uint64_t timestamp)>;
 
 namespace nvenc_rtsp
 {
-  class Decoder
+  class NVENCRTSP_EXPORT Decoder
   {
   public:
     Decoder(NvPipe_Format decFormat, NvPipe_Codec codec, RecvCallFn recv_cb = NULL);
@@ -82,7 +82,7 @@ namespace nvenc_rtsp
     NvPipe_Codec m_codec;
     NvPipe_Format m_decFormat;
 
-    std::vector<uint8_t> m_frameBuffer;
+    uint8_t* m_frameBuffer;
     void *m_gpuDevice;
 
     Timer m_timer;
