@@ -56,11 +56,11 @@ ClientPipeRTSP::ClientPipeRTSP(std::string _rtspAddress, NvPipe_Format _decForma
 			while (m_runProcess)
 			{
 				std::unique_lock<std::mutex> lk(m_decodeMutex);
-				do
+				while(m_decodeQueue.empty())
 				{
 					if(!m_runProcess) return;
 					m_decodeCV.wait(lk);	
-				}while(m_decodeQueue.empty());
+				}
 
         		std::tuple<uint8_t*, size_t, uint32_t> frame = m_decodeQueue.front();
 				m_decodeQueue.pop();
@@ -111,11 +111,11 @@ ClientPipeRTSP::ClientPipeRTSP(std::string _rtspAddress, NvPipe_Format _decForma
 			while (m_runProcess)
 			{
 				std::unique_lock<std::mutex> lk(m_processMutex);
-				do
+				while(m_processQueue.empty());
 				{
 					if(!m_runProcess) return;
 					m_processCV.wait(lk);	
-				}while(m_processQueue.empty());
+				}
 
         		std::tuple<cv::Mat, uint32_t> frame = m_processQueue.front();
 				m_processQueue.pop();
@@ -125,7 +125,6 @@ ClientPipeRTSP::ClientPipeRTSP(std::string _rtspAddress, NvPipe_Format _decForma
 				
 			}
 		}));
-
 
 	m_player = std::make_shared<RK::RtspPlayer>([&](uint8_t *buffer, ssize_t bufferLength)
 		{
@@ -188,6 +187,7 @@ ClientPipeRTSP::ClientPipeRTSP(std::string _rtspAddress, NvPipe_Format _decForma
 					return;
 				}
 			}
+
 			// Store subpackage into framebuffer
 			m_currentFrameCounter = frameCounter;
 			ssize_t rdLength;
