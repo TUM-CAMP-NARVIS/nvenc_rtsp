@@ -147,7 +147,7 @@ ClientPipeRTSP::ClientPipeRTSP(std::string _rtspAddress, NvPipe_Format _decForma
 			if (bufferLength > 35 && bufferLength < 42 && type == 0)
 			{
 				// only decode, if the previous package is not corrupted because of missing subpackages.
-				if (!m_pkgCorrupted && frameCounter == ((m_currentFrameCounter + 1) % 256) && m_prevPkgSize < MAX_RTP_PAYLOAD_SIZE + RTP_HEADER_SIZE)
+				if (!m_pkgCorrupted && frameCounter == ((m_currentFrameCounter + 1) % 256))
 				{
 					double interpretMs = m_timer.getElapsedMilliseconds();
 					m_timer.reset();
@@ -193,7 +193,6 @@ ClientPipeRTSP::ClientPipeRTSP(std::string _rtspAddress, NvPipe_Format _decForma
 			ssize_t rdLength;
 			cvtBuffer(buffer, bufferLength, &m_frameBuffer[m_currentOffset], &rdLength);
 			m_currentOffset += rdLength;
-			m_prevPkgSize = bufferLength;
 
 		}, "Stream");
 
