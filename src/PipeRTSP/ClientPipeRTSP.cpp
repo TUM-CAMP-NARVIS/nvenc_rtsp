@@ -111,7 +111,7 @@ ClientPipeRTSP::ClientPipeRTSP(std::string _rtspAddress, NvPipe_Format _decForma
 			while (m_runProcess)
 			{
 				std::unique_lock<std::mutex> lk(m_processMutex);
-				while(m_processQueue.empty());
+				while(m_processQueue.empty())
 				{
 					if(!m_runProcess) return;
 					m_processCV.wait(lk);	
